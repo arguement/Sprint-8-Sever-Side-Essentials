@@ -1,38 +1,38 @@
 from app import app,db
-from flask import render_template,jsonify,request
+from flask import render_template,jsonify,request,make_response
 from .models import User,Event
 from sqlalchemy import exc
 import jwt
 from functools import wraps
 from cerberus import Validator
+from werkzeug.security import generate_password_hash,check_password_hash
+import datetime
+
 
 def token_required(f):
   @wraps(f)
   def decorated(*args, **kwargs):
-    auth = request.headers.get('Authorization', None)
-    if not auth:
-      return jsonify({'code': 'authorization_header_missing', 'description': 'Authorization header is expected'}), 401
+    token = None
+    if "x-access-token" not  in request.headers:
+            return jsonify({'code': 'x-access-token_missing', 'description': 'x-access-token header is expected'}), 401
 
-    parts = auth.split()
+    token = request.headers.get('x-access-token',None)
+    
+    if not token:
+      return jsonify({"Message":"Missing Tokenn"}),401
 
-    if parts[0].lower() != 'bearer':
-      return jsonify({'code': 'invalid_header', 'description': 'Authorization header must start with Bearer'}), 401
-    elif len(parts) == 1:
-      return jsonify({'code': 'invalid_header', 'description': 'Token not found'}), 401
-    elif len(parts) > 2:
-      return jsonify({'code': 'invalid_header', 'description': 'Authorization header must be Bearer + \s + token'}), 401
-
-    token = parts[1]
+    
+    
     try:
          payload = jwt.decode(token, app.config["SECRET_KEY"])
-
+         current_user = User.query.filter_by(email=payload["email"]).first()
     except jwt.ExpiredSignature:
         return jsonify({'code': 'token_expired', 'description': 'token is expired'}), 401
     except jwt.DecodeError:
         return jsonify({'code': 'token_invalid_signature', 'description': 'Token signature is invalid'}), 401
 
     # g.current_user = user = payload
-    return f(*args, **kwargs)
+    return f(current_user,*args, **kwargs)
 
   return decorated
 
@@ -58,7 +58,7 @@ def register():
     firstname = data.get("firstname")
     lastname = data.get("lastname")
     email = data.get("email")
-    password = data.get("password")
+    password = generate_password_hash(data.get("password"),method="sha256")
     user = User(firstname=firstname,lastname =lastname,email=email,password=password )
     try:
         db.session.add(user)
@@ -68,20 +68,28 @@ def register():
     
     return jsonify({"success": True}), 201
 
-@app.route('/login',methods = ['POST'])
+@app.route('/login',methods = ['GET'])
 def login():
-    data = request.json
-    email = data.get("email")
-    password = data.get("password")
-    check = User.query.filter_by(email=email,password=password).first()
-    if not check:
-        return jsonify({"error": "invalid email or password"}), 409
+    auth = request.authorization
+    if not auth or not auth.username or not auth.password:
+        return make_response('User verification failed', 401, {'WWW-Authenticate':'Basic realm="Login Required!"'})
 
-    payload = {'email': email,"password":password}
-    token = jwt.encode(payload, app.config["SECRET_KEY"], algorithm='HS256').decode('utf-8')
-    return jsonify(error=None, data={'token': token}, message="Token Generated"), 200
+    user = User.query.filter_by(email=auth.username).first()
+    
+    if not user:
+        return jsonify({"error": "invalid email or password"}), 401
+
+    if check_password_hash(user.password, auth.password):
+        token = jwt.encode({
+            'email':user.email,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60)
+            }, app.config['SECRET_KEY'])
+        return jsonify({'token': token.decode('UTF-8')}),200
+
+    
+    return make_response('User verification failed', 401, {'WWW-Authenticate':'Basic realm="Login Required!"'})
 
 @app.route("/secure",methods=["GET","POST"])
 @token_required
-def secure():
+def secure(current_user):
     return jsonify({"data": "blah blah"})
