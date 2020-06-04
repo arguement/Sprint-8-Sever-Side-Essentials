@@ -5,6 +5,8 @@ from app.models import User,Event
 import json
 
 
+
+
 class BaseTestCase(TestCase):
     """A base test case."""
 
@@ -23,6 +25,7 @@ class BaseTestCase(TestCase):
         db.session.commit()
 
     def tearDown(self):
+        # pass
         db.session.remove()
         db.drop_all()
 
@@ -41,12 +44,21 @@ class FlaskTestCase(BaseTestCase):
     def test_add_to_db(self):
         
         response = self.client.post("/register",data=json.dumps(dict(firstname = "John",lastname = "Smith",email = "johnsmith@gmail.com",password = "12345678")),content_type='application/json')
+        # print(User.query.all())
         self.assertEqual(json.loads(response.data),{"success": True})
 
     def test_add_incorrect_email(self):
         
         response = self.client.post("/register",data=json.dumps(dict(firstname = "John",lastname = "Smith",email = "johnsmithgmail.com",password = "12345678")),content_type='application/json')
         self.assertEqual(json.loads(response.data),{'email': ['value does not match regex '"'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$'"]})
+    
+    def test_get_token(self):
+        
+
+        
+       
+        response = self.client.post("/login",data=json.dumps(dict(email = "jordan2@gmail.com",password = "12345678")),content_type='application/json')
+        self.assertEqual(response.status_code,200)
 
     
 
