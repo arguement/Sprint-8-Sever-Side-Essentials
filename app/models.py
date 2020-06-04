@@ -7,6 +7,8 @@ class User(db.Model):
     email = db.Column(db.String(100),index=True,unique=True)
     password = db.Column(db.String(140))
     event = db.relationship('Event', backref='user')
+    admin = db.Column(db.Boolean,default=0)
+    visbility = db.Column(db.Boolean,default=0)
 
     def __repr__(self):
         return "<User %r>" % (self.email)

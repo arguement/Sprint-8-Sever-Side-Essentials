@@ -4,7 +4,7 @@ from app import app,db
 from app.models import User,Event
 import json
 
-
+import base64
 
 
 class BaseTestCase(TestCase):
@@ -39,7 +39,7 @@ class FlaskTestCase(BaseTestCase):
     def test_no_token(self):
         # print(User.query.all())
         response = self.client.get("/secure")
-        self.assertEqual(json.loads(response.data),{'code': 'authorization_header_missing', 'description': 'Authorization header is expected'})
+        self.assertEqual(json.loads(response.data),{'code': 'x-access-token_missing', 'description': 'x-access-token header is expected'})
     
     def test_add_to_db(self):
         
@@ -53,11 +53,9 @@ class FlaskTestCase(BaseTestCase):
         self.assertEqual(json.loads(response.data),{'email': ['value does not match regex '"'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$'"]})
     
     def test_get_token(self):
-        
 
-        
-       
-        response = self.client.post("/login",data=json.dumps(dict(email = "jordan2@gmail.com",password = "12345678")),content_type='application/json')
+        credentials = base64.b64encode(b"jordan2@gmail.com:12345678")
+        response = self.client.post("/login",headers={"Authorization": f"Basic {credentials}"},content_type='application/json')
         self.assertEqual(response.status_code,200)
 
     
