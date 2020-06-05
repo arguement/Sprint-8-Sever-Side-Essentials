@@ -30,3 +30,33 @@ If you wish to update your database model, modify the [models.py](app\models.py)
 python flask-migrate.py db migrate
 python flask-migrate.py db upgrade
 ```
+
+---
+
+## Useful functions
+Credit to <https://wakatime.com/blog/32-flask-part-1-sqlalchemy-models-to-json> for this  
+Check their site for more details and usage
+
+Two functions have been added to all model classes as follows
+```Py
+# Shows some default properties of a model, plus additional fields specified with show
+model.to_dict(show=None, _hide=[], _path=None)
+
+# Updates all the fields specified in the dict.
+model.from_dict(**some_dict)
+```
+
+**Example using the user model**
+```Py
+
+u1 = User.query.first()
+
+# return dictionary with the default fields + specified fields for this user
+u1.to_dict(show=['firstname', 'lastname', 'event'])
+
+# update some attributes for this user
+dt = {'firstname':'John','lastname':'Wick'}
+# returns a dictionary pair the old and new values of altered fields
+u1.from_dict(**dt)
+
+```

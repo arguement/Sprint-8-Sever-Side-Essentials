@@ -34,6 +34,7 @@ Hypothetically, if you prematurely made a commit and had wanted to add another f
 git add {files you want to add}
 git commit --amend --no-edit
 ```
+***NOTE:*** Never do an ammend on master. It will cause headaches. Let's avoid that
 
 ## Working in Branches
 When you are developing a new feature(s) for the project, avoid working in master and instead checkout a new branch to work on as follows:
@@ -73,3 +74,6 @@ If the branch you want to push does not yet exist in the repo, use the following
 ```
 git push --set-upstream origin branch-name-you-want-to-push
 ```
+
+## More Info
+For more info on Git and its various uses, visit [this link](https://www.atlassian.com/git/tutorials/learn-git-with-bitbucket-cloud)
