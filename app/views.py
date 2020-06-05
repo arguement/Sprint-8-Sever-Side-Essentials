@@ -65,11 +65,11 @@ def register():
         db.session.commit()
     except exc.IntegrityError as e:
         return jsonify({"error": "invalid email"}), 409
-    
     return jsonify({"success": True}), 201
 
 @app.route('/login',methods = ['GET'])
 def login():
+    """Validates a users login and returns a token if true"""
     auth = request.authorization
     if not auth or not auth.username or not auth.password:
         return make_response('User verification failed', 401, {'WWW-Authenticate':'Basic realm="Login Required!"'})
