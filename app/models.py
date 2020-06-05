@@ -8,7 +8,7 @@ class User(db.Model):
     password = db.Column(db.String(140))
     event = db.relationship('Event', backref='user')
     admin = db.Column(db.Boolean,default=0)
-    visbility = db.Column(db.Boolean,default=0)
+    
 
     def __repr__(self):
         return "<User %r>" % (self.email)
@@ -25,7 +25,8 @@ class Event(db.Model):
     cost = db.Column(db.String(100))
     venue = db.Column(db.String(100))
     flyer = db.Column(db.String(100))
+    visbility = db.Column(db.Boolean,default=0)
     
-    creator = db.Column(db.Integer,db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer,db.ForeignKey('user.id'))
 
     
