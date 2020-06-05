@@ -1,95 +1,162 @@
-from app import app,db
-from flask import render_template,jsonify,request,make_response
-from .models import User,Event
+from app import app, db
+from flask import render_template, jsonify, request, make_response
+from .models import User, Event
 from sqlalchemy import exc
 import jwt
 from functools import wraps
 from cerberus import Validator
-from werkzeug.security import generate_password_hash,check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
 
 
-def token_required(f):
-  @wraps(f)
-  def decorated(*args, **kwargs):
-    token = None
-    if "x-access-token" not  in request.headers:
-            return jsonify({'code': 'x-access-token_missing', 'description': 'x-access-token header is expected'}), 401
+@app.route('/')
+def index():
+    pass
 
-    token = request.headers.get('x-access-token',None)
-    
-    if not token:
-      return jsonify({"Message":"Missing Tokenn"}),401
 
-    
-    
-    try:
-         payload = jwt.decode(token, app.config["SECRET_KEY"])
-         current_user = User.query.filter_by(email=payload["email"]).first()
-    except jwt.ExpiredSignature:
-        return jsonify({'code': 'token_expired', 'description': 'token is expired'}), 401
-    except jwt.DecodeError:
-        return jsonify({'code': 'token_invalid_signature', 'description': 'Token signature is invalid'}), 401
-
-    # g.current_user = user = payload
-    return f(current_user,*args, **kwargs)
-
-  return decorated
-
-@app.route('/register',methods = ['POST'])
-def register():
-
-    data = request.json # data from request
-
-    schema = {
-    "firstname" : {'type': 'string'},
-	"lastname" : {'type': 'string'},
-	"email" :  {'type': 'string','regex': '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'},
-	"password" : {'type': 'string','minlength': 6, 'maxlength': 20}
-	
-     }
-    v = Validator(schema,require_all=True)
-    check = v.validate(data)
-
-    if not check:
-        return jsonify(v.errors)
-
-    
-    firstname = data.get("firstname")
-    lastname = data.get("lastname")
-    email = data.get("email")
-    password = generate_password_hash(data.get("password"),method="sha256")
-    user = User(firstname=firstname,lastname =lastname,email=email,password=password )
-    try:
-        db.session.add(user)
-        db.session.commit()
-    except exc.IntegrityError as e:
-        return jsonify({"error": "invalid email"}), 409
-    
-    return jsonify({"success": True}), 201
-
-@app.route('/login',methods = ['GET'])
+@app.route('/login', methods=['GET'])
 def login():
+    """ Logs in a user and returns a JWT Token """
+
     auth = request.authorization
     if not auth or not auth.username or not auth.password:
-        return make_response('User verification failed', 401, {'WWW-Authenticate':'Basic realm="Login Required!"'})
+        return make_response('User verification failed', 401, {'WWW-Authenticate': 'Basic realm="Login Required!"'})
 
     user = User.query.filter_by(email=auth.username).first()
-    
+
     if not user:
         return jsonify({"error": "invalid email or password"}), 401
 
     if check_password_hash(user.password, auth.password):
         token = jwt.encode({
-            'email':user.email,
+            'email': user.email,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60)
-            }, app.config['SECRET_KEY'])
-        return jsonify({'token': token.decode('UTF-8')}),200
+        }, app.config['SECRET_KEY'])
+        return jsonify({'token': token.decode('UTF-8')}), 200
 
-    
-    return make_response('User verification failed', 401, {'WWW-Authenticate':'Basic realm="Login Required!"'})
+    return make_response('User verification failed', 401, {'WWW-Authenticate': 'Basic realm="Login Required!"'})
 
-@app.route("/secure",methods=["GET","POST"])
+
+@app.route('/register', methods=['POST'])
+def register():
+    """ Creates a new user (registers the user) """
+    data = request.json  # data from request
+
+    schema = {
+        "firstname": {'type': 'string'},
+        "lastname": {'type': 'string'},
+        "email":  {'type': 'string', 'regex': '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'},
+        "password": {'type': 'string', 'minlength': 6, 'maxlength': 20}
+
+    }
+    v = Validator(schema, require_all=True)
+    check = v.validate(data)
+
+    if not check:
+        return jsonify(v.errors)
+
+    firstname = data.get("firstname")
+    lastname = data.get("lastname")
+    email = data.get("email")
+    password = generate_password_hash(data.get("password"), method="sha256")
+    user = User(firstname=firstname, lastname=lastname,
+                email=email, password=password)
+    try:
+        db.session.add(user)
+        db.session.commit()
+    except exc.IntegrityError as e:
+        return jsonify({"error": "invalid email"}), 409
+
+    return jsonify({"success": True}), 201
+
+
+@app.route('/user', methods=['GET'])
+def get_users():
+    """Get a list of all users (including details)"""
+    pass
+
+
+@app.route('/user/<user_id>', methods=['GET'])
+def getUser():
+    """Get information on the user with the given ID"""
+    pass
+
+
+@app.route('/user/<user_id>', methods=['PUT'])
+def updateUser():
+    """"Toggles the user with the provided ID to an admin or not admin"""
+    pass
+
+
+@app.route('/user/<user_id>', methods=['DELETE'])
+def deleteUser():
+    """Deletes the user with given ID"""
+    pass
+
+
+@app.route('/event', methods=['GET'])
+def create_event():
+    """Create a new event"""
+    pass
+
+
+@app.route('/event', methods=['GET'])
+def get_all_events():
+    """Get a list of all (visible) events """
+    pass
+
+
+@app.route('/event/<event_id>', methods=['GET'])
+def get_event():
+    """Get details on the event with the given ID"""
+    pass
+
+
+@app.route('/event/user/<user_id>', methods=['GET'])
+def myEvents():
+    """"Get a list of all events created by a particular user"""
+    pass
+
+
+@app.route('/event', methods=['PUT'])
+def update_event():
+    """"Update the event with a given ID. Only users who created an event and admins can update it. Additionally, only admins can set the event visibility"""
+    pass
+
+
+@app.route('/event', methods=['DELETE'])
+def delete_event():
+    """Delete the event with given ID"""
+    pass
+
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if "x-access-token" not in request.headers:
+            return jsonify({'code': 'x-access-token_missing', 'description': 'x-access-token header is expected'}), 401
+
+        token = request.headers.get('x-access-token', None)
+
+        if not token:
+            return jsonify({"Message": "Missing Tokenn"}), 401
+
+        try:
+            payload = jwt.decode(token, app.config["SECRET_KEY"])
+            current_user = User.query.filter_by(email=payload["email"]).first()
+        except jwt.ExpiredSignature:
+            return jsonify({'code': 'token_expired', 'description': 'token is expired'}), 401
+        except jwt.DecodeError:
+            return jsonify({'code': 'token_invalid_signature', 'description': 'Token signature is invalid'}), 401
+
+        # g.current_user = user = payload
+        return f(current_user, *args, **kwargs)
+
+    return decorated
+
+
+@app.route("/secure", methods=["GET", "POST"])
 @token_required
 def secure(current_user):
     return jsonify({"data": "blah blah"})
