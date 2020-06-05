@@ -1,6 +1,9 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+import wtforms_json
 
+
+wtforms_json.init()
 app = Flask(__name__)
 
 # this will get configurations from config.py

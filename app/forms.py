@@ -12,6 +12,9 @@ class RegistrationForm(FlaskForm):
     lastname = TextField('Lastname', [Required()])
     email = TextField('Email', [Required(), Email()])
     password = PasswordField('Password', [Required()])
+    # confirm = PasswordField('Confirm Password', [Required(), EqualTo('password', message='Passwords must match!')])
+
+class RegFrontEndForm(RegistrationForm):
     confirm = PasswordField('Confirm Password', [Required(), EqualTo('password', message='Passwords must match!')])
 
 class LoginForm(FlaskForm):

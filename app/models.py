@@ -5,8 +5,8 @@ class User(BaseModel):
     id = db.Column(db.Integer,primary_key=True)
     firstname = db.Column(db.String(100))
     lastname = db.Column(db.String(100))
-    email = db.Column(db.String(100),index=True,unique=True)
-    password = db.Column(db.String(140))
+    email = db.Column(db.String(100),index=True,unique=True, nullable=False)
+    password = db.Column(db.String(140), nullable=False)
     event = db.relationship('Event', backref='user', lazy='dynamic')
     admin = db.Column(db.Boolean,default=0,nullable=False)
     
@@ -32,13 +32,12 @@ class User(BaseModel):
 
 class Event(BaseModel):
     id = db.Column(db.Integer,primary_key=True)
-    name = db.Column(db.String(100),nullable=False)
-    description = db.Column(db.String(100),nullable=False)
-    category = db.Column(db.String(100),nullable=False)
     title = db.Column(db.String(100),nullable=False)
+    description = db.Column(db.String(150),nullable=False)
+    category = db.Column(db.String(100),nullable=False)
     start_date = db.Column(db.DateTime,nullable=False)
     end_date = db.Column(db.DateTime,nullable=False)
-    cost = db.Column(db.String(100))
+    cost = db.Column(db.Numeric(10, 2, asdecimal=False), nullable=False, default=0)
     venue = db.Column(db.String(100))
     flyer = db.Column(db.String(100))
     visbility = db.Column(db.Boolean,default=0, nullable=False)

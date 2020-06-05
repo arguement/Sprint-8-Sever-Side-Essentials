@@ -1,19 +1,68 @@
 from app import app, db
-from flask import render_template, jsonify, request, make_response
+from flask import render_template, flash, url_for, session, redirect, request, make_response, jsonify
 from .models import User, Event
+from .forms import RegistrationForm, LoginForm, RegFrontEndForm
+from .utils import token_required, form_errors
 from sqlalchemy import exc
 import jwt
-from functools import wraps
 from cerberus import Validator
 from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
 
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def index():
-    pass
+    return render_template('index.html', title="My Main Page")
+
+@app.route('/events', methods=['GET'])
+def events():
+    events = Event.query.all()
+    return render_template('events.html', title='Events', user=session['user'], events=events)
+
+@app.route('/login-front', methods=['POST', 'GET'])
+def login_front():
+    form = LoginForm()
+    if form.validate_on_submit():
+        email = form.email.data
+        password = form.password.data
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            flash('Credentials incorrect', category='danger')
+            return redirect(url_for('login_front'))
+        if check_password_hash(user.password, password):
+            session['user'] = user.firstname
+            flash('Successfully logged in', category='success')
+            return redirect(url_for('events'))
+    return render_template('login.html', title='Login', form=form)
+
+@app.route('/logout', methods=['GET'])
+def logout():
+    if 'user' in session:
+        session.pop('user', None)
+    flash('You have logged out successfully', category='success')
+    return redirect(url_for('login_front'))
+
+@app.route('/register', methods=['POST', 'GET'])
+def register():
+    form = RegFrontEndForm()
+    if form.validate_on_submit():
+        firstname = form.firstname.data
+        lastname = form.lastname.data
+        email = form.email.data
+        password = form.password.data
+
+        user = User(firstname=firstname, lastname=lastname, email=email, password=generate_password_hash(password, method='sha256'))
+
+        db.session.add(user)
+        db.session.commit()
+        flash('Successfully Registered', category='success')
+        return redirect(url_for('index'))
+    
+    return render_template('register.html', title="Register", form=form)
 
 
+
+#=========================== REST API ===============================
 @app.route('/login', methods=['GET'])
 def login():
     """ Logs in a user and returns a JWT Token """
@@ -37,61 +86,81 @@ def login():
     return make_response('User verification failed', 401, {'WWW-Authenticate': 'Basic realm="Login Required!"'})
 
 
-@app.route('/register', methods=['POST'])
-def register():
+@app.route('/user', methods=['POST'])
+def createUser():
     """ Creates a new user (registers the user) """
     data = request.json  # data from request
+    form = RegistrationForm.from_json(data)
 
-    schema = {
-        "firstname": {'type': 'string'},
-        "lastname": {'type': 'string'},
-        "email":  {'type': 'string', 'regex': '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'},
-        "password": {'type': 'string', 'minlength': 6, 'maxlength': 20}
+    if form.validate_on_submit():
+        firstname = data.get("firstname")
+        lastname = data.get("lastname")
+        email = data.get("email")
+        password = generate_password_hash(data.get("password"), method="sha256")
+        user = User(firstname=firstname, lastname=lastname,
+                    email=email, password=password)
+        try:
+            db.session.add(user)
+            db.session.commit()
+        except exc.IntegrityError as e:
+            return jsonify({"error": "invalid email"}), 409
 
-    }
-    v = Validator(schema, require_all=True)
-    check = v.validate(data)
-
-    if not check:
-        return jsonify(v.errors)
-
-    firstname = data.get("firstname")
-    lastname = data.get("lastname")
-    email = data.get("email")
-    password = generate_password_hash(data.get("password"), method="sha256")
-    user = User(firstname=firstname, lastname=lastname,
-                email=email, password=password)
-    try:
-        db.session.add(user)
-        db.session.commit()
-    except exc.IntegrityError as e:
-        return jsonify({"error": "invalid email"}), 409
-
-    return jsonify({"success": True}), 201
+        return jsonify({"success": True}), 201
+    else:
+        return jsonify({'errors':form_errors(form)})
 
 
 @app.route('/user', methods=['GET'])
-def get_users():
+@token_required
+def get_users(current_user):
     """Get a list of all users (including details)"""
-    pass
+    if not current_user.admin:
+        return jsonify({'Message':'Sorry, function not permitted!'}), 401
+
+    users = User.query.all()
+    output = []
+    for user in users:
+        output.append(user.to_dict(show=["firstname", "lastname", "admin"]))
+    return jsonify({'users:': output})
 
 
 @app.route('/user/<user_id>', methods=['GET'])
-def getUser():
+# @token_required
+def getUser(user_id):
     """Get information on the user with the given ID"""
-    pass
+    user = User.query.filter_by(id=user_id).first()
+    if user:
+        return jsonify({'user': user.to_dict(show=["firstname", "lastname", "admin"])})
+    else:
+        return jsonify({'Message':'User does not exist'})
 
 
 @app.route('/user/<user_id>', methods=['PUT'])
-def updateUser():
+def makeAdmin(user_id):
     """"Toggles the user with the provided ID to an admin or not admin"""
-    pass
+    user = User.query.filter_by(id=user_id).first()
+    if user:
+        user.admin=True
+        db.session.commit()
+        return jsonify({'Message':f'User with email {user.email} promoted to admin'})
+    else:
+        return jsonify({'Message':'User does not exist'})
 
 
 @app.route('/user/<user_id>', methods=['DELETE'])
-def deleteUser():
+@token_required
+def deleteUser(current_user, user_id):
     """Deletes the user with given ID"""
-    pass
+    if not current_user.admin:
+        return jsonify({'Message':'Sorry, function not permitted!'}), 401
+
+    user = User.query.filter_by(id=user_id).first()
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({'Message':f'User with email {user.email} deleted'})
+    else:
+        return jsonify({'Message':'User does not exist'})
 
 
 @app.route('/event', methods=['GET'])
@@ -107,13 +176,13 @@ def get_all_events():
 
 
 @app.route('/event/<event_id>', methods=['GET'])
-def get_event():
+def get_event(event_id):
     """Get details on the event with the given ID"""
     pass
 
 
 @app.route('/event/user/<user_id>', methods=['GET'])
-def myEvents():
+def usersEvents(user_id):
     """"Get a list of all events created by a particular user"""
     pass
 
@@ -128,33 +197,6 @@ def update_event():
 def delete_event():
     """Delete the event with given ID"""
     pass
-
-
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = None
-        if "x-access-token" not in request.headers:
-            return jsonify({'code': 'x-access-token_missing', 'description': 'x-access-token header is expected'}), 401
-
-        token = request.headers.get('x-access-token', None)
-
-        if not token:
-            return jsonify({"Message": "Missing Tokenn"}), 401
-
-        try:
-            payload = jwt.decode(token, app.config["SECRET_KEY"])
-            current_user = User.query.filter_by(email=payload["email"]).first()
-        except jwt.ExpiredSignature:
-            return jsonify({'code': 'token_expired', 'description': 'token is expired'}), 401
-        except jwt.DecodeError:
-            return jsonify({'code': 'token_invalid_signature', 'description': 'Token signature is invalid'}), 401
-
-        # g.current_user = user = payload
-        return f(current_user, *args, **kwargs)
-
-    return decorated
-
 
 @app.route("/secure", methods=["GET", "POST"])
 @token_required
