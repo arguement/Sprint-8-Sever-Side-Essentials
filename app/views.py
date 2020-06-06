@@ -1,7 +1,7 @@
 from app import app, db
 from flask import render_template, flash, url_for, session, redirect, request, make_response, jsonify
 from .models import User, Event
-from .forms import RegistrationForm, LoginForm, RegFrontEndForm
+from .forms import RegistrationForm, LoginForm, RegFrontEndForm,EventForm
 from .utils import token_required, form_errors
 from sqlalchemy import exc
 import jwt
@@ -184,19 +184,69 @@ def get_event(event_id):
 @app.route('/event/user/<user_id>', methods=['GET'])
 def usersEvents(user_id):
     """"Get a list of all events created by a particular user"""
-    pass
+    user = User.query.filter_by(id=user_id).first()
+    if not user:
+        return jsonify({'errors':'user doesnt exist'})
+    
+    events = user.event.all()
+    columns = Event.__table__.columns.keys() # get all column names
+    events_data = list(map(lambda x: x.to_dict(show=columns),events))
+    
+    
+    return jsonify({'events': events_data}),200
+    
 
-
-@app.route('/event', methods=['PUT'])
-def update_event():
+@app.route('/event/<event_id>', methods=['PUT'])
+@token_required
+def update_event(current_user, event_id):
     """"Update the event with a given ID. Only users who created an event and admins can update it. Additionally, only admins can set the event visibility"""
-    pass
+    data = request.json  # data from request
+    
+    try:
+        form = EventForm.from_json(data,skip_unknown_keys=False)
+    except Exception as e:
+        return jsonify({"errors": f"{e}"})
+
+    if not form.validate_on_submit():
+        print("here")
+        return jsonify({'errors':form_errors(form)})
+
+    event = Event.query.filter_by(id=event_id).first()
+    if not event:
+        return jsonify({'errors':'event doesnt exist'})
+
+    if current_user.admin == False:
+        
+        if current_user.id != event.user_id:
+            return jsonify({"errors":"you dont have this event"})
+
+        if "visbility" in data:
+            return jsonify({"errors":"user cannot change visibilty"})
+
+        for k,v in data.items():
+            setattr(event,k,v)
+
+    else:
+        for k,v in data.items():
+            setattr(event,k,v)
 
 
-@app.route('/event', methods=['DELETE'])
-def delete_event():
+    db.session.commit()
+
+    return jsonify({'message':'success'}),200
+
+
+@app.route('/event/<event_id>', methods=['DELETE'])
+def delete_event(event_id):
     """Delete the event with given ID"""
-    pass
+    event = Event.query.filter_by(id=event_id).first()
+    if not event:
+        return jsonify({'errors':'event doesnt exist'})
+
+    db.session.delete(event)
+    db.session.commit()
+    return jsonify({'message':'success'}),200
+    
 
 @app.route("/secure", methods=["GET", "POST"])
 @token_required
