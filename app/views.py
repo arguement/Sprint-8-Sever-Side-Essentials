@@ -1,7 +1,7 @@
 from app import app, db
 from flask import render_template, flash, url_for, session, redirect, request, make_response, jsonify
 from .models import User, Event
-from .forms import RegistrationForm, LoginForm, RegFrontEndForm,EventForm
+from .forms import RegistrationForm, LoginForm, RegFrontEndForm,EventForm, CreateEventForm
 from .utils import token_required, form_errors
 from sqlalchemy import exc
 import jwt
@@ -72,7 +72,6 @@ def login():
         return make_response('User verification failed', 401, {'WWW-Authenticate': 'Basic realm="Login Required!"'})
 
     user = User.query.filter_by(email=auth.username).first()
-
     if not user:
         return jsonify({"error": "invalid email or password"}), 401
 
@@ -163,22 +162,65 @@ def deleteUser(current_user, user_id):
         return jsonify({'Message':'User does not exist'})
 
 
-@app.route('/event', methods=['GET'])
+@app.route('/event', methods=['POST', 'GET'])
 def create_event():
     """Create a new event"""
-    pass
+    data = request.json     # results from json request
+    form = CreateEventForm.from_json(data)
+
+    if form.validate_on_submit():
+        title = data.get("title")
+        description = data.get("description")
+        category = data.get("category")
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
+        cost = data.get("cost")
+        venue = data.get("venue")
+        flyer = data.get("flyer")
+
+        event = Event(title = title, description = description, category = category, start_date = start_date, end_date = end_date, cost = cost, venue = venue, flyer = flyer)
+        try:
+            db.session.add(event)
+            db.session.commit()
+        except exc.IntegrityError as e:
+            return jsonify({"error": "invalid input"}), 409
+
+        return jsonify({"success": True}), 201
+    else:
+        return jsonify({'errors':form_errors(form)})
 
 
-@app.route('/event', methods=['GET'])
+@app.route('/visible/events', methods=['GET'])
+@token_required
 def get_all_events():
     """Get a list of all (visible) events """
-    pass
+
+    if not current_user.admin:
+        return jsonify({'Message':'Sorry, function not permitted!'}), 401
+
+    events = Event.query.filter_by(visbility=1).all()
+    output = []
+    for event in events: 
+        output.append(event.to_dict(show=["title", "description", "cost", "start_date"]))
+    return jsonify({'events': output})
 
 
 @app.route('/event/<event_id>', methods=['GET'])
+@token_required
 def get_event(event_id):
     """Get details on the event with the given ID"""
-    pass
+
+    if not current_user.admin:
+        return jsonify({'Message':'Sorry, function not permitted!'}), 401
+
+    event = Event.query.filter_by(id=event_id).first()
+    output = []
+
+    if not event:
+        return jsonify({'message': 'Event does not exist.'})  
+        
+    output.append(event.to_dict(show=["title", "description", "cost", "start_date"]))  
+    return jsonify({'Event' : output})
 
 
 @app.route('/event/user/<user_id>', methods=['GET'])

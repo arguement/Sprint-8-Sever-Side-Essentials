@@ -1,10 +1,9 @@
 from flask_wtf import FlaskForm
 
-from wtforms import TextField, PasswordField, TextAreaField,DateTimeField
-
 from flask_wtf.file import FileField, FileRequired, FileAllowed
+from wtforms import TextField, PasswordField, TextAreaField, DateTimeField , DecimalField
 
-from wtforms.validators import Required, Email, EqualTo, ValidationError, Length
+from wtforms.validators import Required, Email, EqualTo, ValidationError, Length, DataRequired
 
 from .custom_validators import check_end_date_greater_than_start
 
@@ -31,6 +30,7 @@ class LoginForm(FlaskForm):
 
 
 class EventForm(FlaskForm):
+    """Used to update an existing event"""
     class Meta:
         csrf = False
 
@@ -39,7 +39,22 @@ class EventForm(FlaskForm):
     category = TextField('Category')
     start_date = DateTimeField('Start Date')
     end_date = DateTimeField('End Date',validators=[check_end_date_greater_than_start])
-    cost = TextField('Cost')
+    cost = DecimalField(places=2)
     venue = TextField('Venue')
     flyer = TextField('Flyer')
     visbility = TextField('Flyer')
+
+class CreateEventForm(FlaskForm):
+    """Used to create an event"""
+    class Meta:
+        csrf = False
+
+    title = TextField('Title', [Required()])
+    description = TextAreaField('Description', [Required()])
+    category = TextField('Category', [Required()])
+    start_date = DateTimeField('Start Date:', validators=[Required()])
+    end_date = DateTimeField('End Date:', validators=[Required(), check_end_date_greater_than_start])
+    cost = DecimalField(places=2, validators=[DataRequired()])
+    venue = TextField('Venue: ', [Required()])
+    flyer = TextField('Flyer: ', [Required()])
+    # visbility = BooleanField('Visble: ', validators=[DataRequired(), ])
