@@ -182,7 +182,8 @@ def get_event(event_id):
 
 
 @app.route('/event/user/<user_id>', methods=['GET'])
-def usersEvents(user_id):
+@token_required
+def usersEvents(current_user,user_id):
     """"Get a list of all events created by a particular user"""
     user = User.query.filter_by(id=user_id).first()
     if not user:
@@ -208,7 +209,7 @@ def update_event(current_user, event_id):
         return jsonify({"errors": f"{e}"})
 
     if not form.validate_on_submit():
-        print("here")
+        # print("here")
         return jsonify({'errors':form_errors(form)})
 
     event = Event.query.filter_by(id=event_id).first()
@@ -237,7 +238,8 @@ def update_event(current_user, event_id):
 
 
 @app.route('/event/<event_id>', methods=['DELETE'])
-def delete_event(event_id):
+@token_required
+def delete_event(current_user,event_id):
     """Delete the event with given ID"""
     event = Event.query.filter_by(id=event_id).first()
     if not event:
