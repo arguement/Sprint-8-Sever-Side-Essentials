@@ -30,16 +30,6 @@ class BaseTestCase(TestCase):
         db.drop_all()
 
 class FlaskTestCase(BaseTestCase):
-
-    def test_secure_for_status(self):
-        
-        response = self.client.get("/secure")
-        self.assertEqual(response.status_code,401)
-
-    def test_no_token(self):
-        # print(User.query.all())
-        response = self.client.get("/secure")
-        self.assertEqual(json.loads(response.data),{'code': 'x-access-token_missing', 'description': 'x-access-token header is expected'})
     
     def test_add_to_db(self):
         

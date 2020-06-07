@@ -40,7 +40,7 @@ class Event(BaseModel):
     cost = db.Column(db.Numeric(10, 2, asdecimal=False), nullable=False, default=0)
     venue = db.Column(db.String(100))
     flyer = db.Column(db.String(100))
-    visbility = db.Column(db.Boolean,default=0, nullable=False)
+    visibility = db.Column(db.Boolean,default=0, nullable=False)
     user_id = db.Column(db.Integer,db.ForeignKey('user.id'))
 
     # fields that are always returned by to_dict method

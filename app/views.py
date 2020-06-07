@@ -3,7 +3,7 @@ from flask import render_template, flash, url_for, session, redirect, request, m
 from .models import User, Event
 from .forms import RegistrationForm, LoginForm, RegFrontEndForm,EventForm, CreateEventForm
 from .utils import token_required, form_errors
-from sqlalchemy import exc
+from sqlalchemy import exc, and_, or_
 import jwt
 from cerberus import Validator
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -63,7 +63,7 @@ def register():
 
 
 #=========================== REST API ===============================
-@app.route('/login', methods=['GET'])
+@app.route('/login', methods=['POST','GET'])
 def login():
     """ Logs in a user and returns a JWT Token """
 
@@ -162,7 +162,7 @@ def deleteUser(current_user, user_id):
         return jsonify({'Message':'User does not exist'})
 
 
-@app.route('/event', methods=['POST', 'GET'])
+@app.route('/event', methods=['POST'])
 def create_event():
     """Create a new event"""
     data = request.json     # results from json request
@@ -190,30 +190,36 @@ def create_event():
         return jsonify({'errors':form_errors(form)})
 
 
-@app.route('/visible/events', methods=['GET'])
+@app.route('/event', methods=['GET'])
 @token_required
-def get_all_events():
+def get_all_events(current_user):
     """Get a list of all (visible) events """
 
-    if not current_user.admin:
-        return jsonify({'Message':'Sorry, function not permitted!'}), 401
+    # if the user is an admin, return all events. Otherwise, only visible events
+    if current_user.admin:
+        events = Event.query.all()
+    else:
+        events = Event.query.filter_by(visibility=1).all()
 
-    events = Event.query.filter_by(visbility=1).all()
+
+    
     output = []
     for event in events: 
-        output.append(event.to_dict(show=["title", "description", "cost", "start_date"]))
+        output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility"]))
     return jsonify({'events': output})
 
 
 @app.route('/event/<event_id>', methods=['GET'])
 @token_required
-def get_event(event_id):
+def get_event(current_user, event_id):
     """Get details on the event with the given ID"""
 
-    if not current_user.admin:
-        return jsonify({'Message':'Sorry, function not permitted!'}), 401
+    if current_user.admin:
+        event = Event.query.filter_by(id=event_id).first()
+    else:
+        event = Event.query.filter_by(id=event_id, user_id=current_user.id).first()
 
-    event = Event.query.filter_by(id=event_id).first()
+    
     output = []
 
     if not event:
@@ -226,12 +232,22 @@ def get_event(event_id):
 @app.route('/event/user/<user_id>', methods=['GET'])
 @token_required
 def usersEvents(current_user,user_id):
-    """"Get a list of all events created by a particular user"""
+    """"Get a list of all events created by a particular user. Only admins can get info on any user:
+        regular users can only request their own events
+    """
     user = User.query.filter_by(id=user_id).first()
     if not user:
-        return jsonify({'errors':'user doesnt exist'})
+        return jsonify({'errors':'user does not exist'})
+    elif current_user.admin:
+        events = user.event.all()
+    elif user.id == current_user.id:
+        # User is not an admin, but requesting info on all of his/her events
+        events = user.event.all()
+    else:
+        return jsonify({'errors':'only admins can view events of another user'})
+        
     
-    events = user.event.all()
+    
     columns = Event.__table__.columns.keys() # get all column names
     events_data = list(map(lambda x: x.to_dict(show=columns),events))
     
@@ -261,9 +277,9 @@ def update_event(current_user, event_id):
     if current_user.admin == False:
         
         if current_user.id != event.user_id:
-            return jsonify({"errors":"you dont have this event"})
+            return jsonify({"errors":"you dont have permission to change this event"})
 
-        if "visbility" in data:
+        if "visibility" in data:
             return jsonify({"errors":"user cannot change visibilty"})
 
         for k,v in data.items():
@@ -282,17 +298,16 @@ def update_event(current_user, event_id):
 @app.route('/event/<event_id>', methods=['DELETE'])
 @token_required
 def delete_event(current_user,event_id):
-    """Delete the event with given ID"""
+    """Delete the event with given ID. Only admins or the user who created an event can delete it"""
     event = Event.query.filter_by(id=event_id).first()
     if not event:
         return jsonify({'errors':'event doesnt exist'})
+
+    if current_user.admin == False:
+        if current_user.id != event.user_id:
+            return jsonify({"errors":"you dont have permission to change this event"})
 
     db.session.delete(event)
     db.session.commit()
     return jsonify({'message':'success'}),200
     
-
-@app.route("/secure", methods=["GET", "POST"])
-@token_required
-def secure(current_user):
-    return jsonify({"data": "blah blah"})

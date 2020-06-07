@@ -42,7 +42,7 @@ class EventForm(FlaskForm):
     cost = DecimalField(places=2)
     venue = TextField('Venue')
     flyer = TextField('Flyer')
-    visbility = TextField('Flyer')
+    visibility = TextField('Visibility')
 
 class CreateEventForm(FlaskForm):
     """Used to create an event"""
@@ -57,4 +57,4 @@ class CreateEventForm(FlaskForm):
     cost = DecimalField(places=2, validators=[DataRequired()])
     venue = TextField('Venue: ', [Required()])
     flyer = TextField('Flyer: ', [Required()])
-    # visbility = BooleanField('Visble: ', validators=[DataRequired(), ])
+    # visibility = BooleanField('Visble: ', validators=[DataRequired(), ])
