@@ -8,7 +8,8 @@ import jwt
 from cerberus import Validator
 from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
-
+from werkzeug.utils import secure_filename
+import os
 
 @app.route('/', methods=['GET'])
 def index():
@@ -163,22 +164,28 @@ def deleteUser(current_user, user_id):
 
 
 @app.route('/event', methods=['POST'])
-def create_event():
+@token_required
+def create_event(current_user):
     """Create a new event"""
-    data = request.json     # results from json request
-    form = CreateEventForm.from_json(data)
+    # data = request.json     # results from json request
+    form = CreateEventForm()
 
     if form.validate_on_submit():
-        title = data.get("title")
-        description = data.get("description")
-        category = data.get("category")
-        start_date = data.get("start_date")
-        end_date = data.get("end_date")
-        cost = data.get("cost")
-        venue = data.get("venue")
-        flyer = data.get("flyer")
+        title = form.title.data
+        description = form.description.data
+        category = form.category.data
+        start_date = form.start_date.data
+        end_date = form.end_date.data
+        cost = form.cost.data
+        venue = form.venue.data
+        flyer = form.flyer.data
 
-        event = Event(title = title, description = description, category = category, start_date = start_date, end_date = end_date, cost = cost, venue = venue, flyer = flyer)
+        filename = secure_filename(flyer.filename)
+        flyer.save(os.path.join(
+            app.config['UPLOAD_FOLDER'], filename
+        ))
+
+        event = Event(user = current_user,title = title, description = description, category = category, start_date = start_date, end_date = end_date, cost = cost, venue = venue, flyer = flyer.filename)
         try:
             db.session.add(event)
             db.session.commit()
@@ -259,10 +266,10 @@ def usersEvents(current_user,user_id):
 @token_required
 def update_event(current_user, event_id):
     """"Update the event with a given ID. Only users who created an event and admins can update it. Additionally, only admins can set the event visibility"""
-    data = request.json  # data from request
-    
+    data = request.form.to_dict() # data from request
+    print(data)
     try:
-        form = EventForm.from_json(data,skip_unknown_keys=False)
+        form = EventForm()
     except Exception as e:
         return jsonify({"errors": f"{e}"})
 
@@ -282,8 +289,26 @@ def update_event(current_user, event_id):
         if "visibility" in data:
             return jsonify({"errors":"user cannot change visibilty"})
 
-        for k,v in data.items():
+        for k,v in data.items():    
             setattr(event,k,v)
+
+        
+        # get new file info
+        flyer = form.flyer.data
+        filename = secure_filename(flyer.filename)
+        flyer.save(os.path.join(
+            app.config['UPLOAD_FOLDER'], filename
+        ))
+
+        #old file info
+        file = os.path.join(
+            app.config['UPLOAD_FOLDER'], event.flyer
+        )
+        event.flyer = filename # chaange in db
+        if os.path.isfile(file):
+            os.remove(file)
+        else:    ## Show an error ##
+            print("Error: %s file not found" % file)
 
     else:
         for k,v in data.items():
@@ -310,4 +335,12 @@ def delete_event(current_user,event_id):
     db.session.delete(event)
     db.session.commit()
     return jsonify({'message':'success'}),200
+
+
+@app.route("/formtest",methods=["GET","POST"])
+def formtest():
+    form = EventForm()
+    print(request.form.to_dict())
+    print(form.title.data)
+    return "sd"
     
