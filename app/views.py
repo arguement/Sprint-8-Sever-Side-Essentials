@@ -284,7 +284,6 @@ def update_event(current_user, event_id):
         return jsonify({"errors": f"{e}"})
 
     if not form.validate_on_submit():
-        # print("here")
         return jsonify({'errors':form_errors(form)})
 
     event = Event.query.filter_by(id=event_id).first()
@@ -298,12 +297,12 @@ def update_event(current_user, event_id):
 
         if "visibility" in data:
             return jsonify({"errors":"user cannot change visibilty"})
+    else:
+        if "visibility" in data:
+            data["visibility"] = True if data["visibility"].lower() == "true" else False
 
-        for k,v in data.items():    
-            setattr(event,k,v)
-
-        
-        # get new file info
+    try:
+        # check for new flyer file info
         flyer = form.flyer.data
         filename = secure_filename(flyer.filename)
         flyer.save(os.path.join(
@@ -319,10 +318,11 @@ def update_event(current_user, event_id):
             os.remove(file)
         else:    ## Show an error ##
             print("Error: %s file not found" % file)
-
-    else:
-        for k,v in data.items():
-            setattr(event,k,v)
+    except:
+        data.pop("flyer", None)
+    
+    for k,v in data.items():    
+        setattr(event,k,v)
 
 
     db.session.commit()
