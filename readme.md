@@ -60,3 +60,9 @@ dt = {'firstname':'John','lastname':'Wick'}
 u1.from_dict(**dt)
 
 ```
+
+## Initializing Your Database Tables with Users and Events
+To get a fresh database with some Users and Events initialized, use the following command:
+```
+python db_init.py
+```

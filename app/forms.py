@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 
 from flask_wtf.file import FileField, FileRequired, FileAllowed
-from wtforms import TextField, PasswordField, TextAreaField, DateTimeField , DecimalField
+from wtforms import TextField, PasswordField, TextAreaField, DateTimeField , DecimalField, BooleanField
 
 from wtforms.validators import Required, Email, EqualTo, ValidationError, Length, DataRequired
 
@@ -42,7 +42,7 @@ class EventForm(FlaskForm):
     cost = DecimalField(places=2)
     venue = TextField('Venue')
     flyer = TextField('Flyer')
-    visibility = TextField('Visibility')
+    visibility = BooleanField('Visibility')
 
 class CreateEventForm(FlaskForm):
     """Used to create an event"""
@@ -55,6 +55,6 @@ class CreateEventForm(FlaskForm):
     start_date = DateTimeField('Start Date:', validators=[Required()])
     end_date = DateTimeField('End Date:', validators=[Required(), check_end_date_greater_than_start])
     cost = DecimalField(places=2, validators=[DataRequired()])
-    venue = TextField('Venue: ', [Required()])
-    flyer = TextField('Flyer: ', [Required()])
-    # visibility = BooleanField('Visble: ', validators=[DataRequired(), ])
+    venue = TextField('Venue: ')
+    flyer = TextField('Flyer: ')
+    # visibility = BooleanField('Visible: ')
