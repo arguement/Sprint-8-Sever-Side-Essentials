@@ -41,8 +41,9 @@ class EventForm(FlaskForm):
     end_date = DateTimeField('End Date',validators=[check_end_date_greater_than_start])
     cost = DecimalField(places=2)
     venue = TextField('Venue')
-    flyer = TextField('Flyer')
+    flyer = FileField("Flyer",validators=[FileRequired(),FileAllowed(['jpg', 'png', 'Images only!'])])
     visibility = BooleanField('Visibility')
+
 
 class CreateEventForm(FlaskForm):
     """Used to create an event"""
@@ -56,5 +57,5 @@ class CreateEventForm(FlaskForm):
     end_date = DateTimeField('End Date:', validators=[Required(), check_end_date_greater_than_start])
     cost = DecimalField(places=2, validators=[DataRequired()])
     venue = TextField('Venue: ')
-    flyer = TextField('Flyer: ')
+    flyer = FileField("Flyer",validators=[FileRequired(),FileAllowed(['jpg', 'png', 'Images only!'])])
     # visibility = BooleanField('Visible: ')
