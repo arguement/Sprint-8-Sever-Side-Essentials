@@ -25,11 +25,43 @@ def token_required(f):
         except jwt.DecodeError:
             return jsonify({'code': 'token_invalid_signature', 'description': 'Token signature is invalid'}), 401
 
-        # g.current_user = user = payload
         return f(current_user, *args, **kwargs)
 
     return decorated
 
+def admin_only(f):
+    @wraps(f)
+    def decorated(current_user, *args, **kwargs):
+        # user authenticated from login required
+        if current_user.admin:
+            return f(*args, **kwargs)
+        else:
+            return jsonify({'code': 'admin_only', 'description': 'Only admins can use this route'}), 401
+    return decorated
+    
+def check_for_token(f):
+    """Determines if the user has a valid token for logged in priviledges: otherwise use guest account"""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        guest = User(firstname="", lastname="", email="", password="", admin=False, id=0)
+        if "x-access-token" in request.headers:
+            token = request.headers.get('x-access-token', None)
+
+            if token:
+                try:
+                    payload = jwt.decode(token, app.config["SECRET_KEY"])
+                    current_user = User.query.filter_by(email=payload["email"]).first()
+                except:
+                    current_user = guest
+            else:
+                current_user = guest
+        else:
+            current_user = guest
+
+        return f(current_user, *args, **kwargs)
+
+    return decorated
 
 def form_errors(form):
     """Collects and returns a list of form errors"""

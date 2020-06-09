@@ -15,6 +15,18 @@ $ pip install -r requirements.txt
 $ python run.py
 ```
 
+## Your config.py File
+This project uses a `config.py` file to set the parameters the app will use when running. Hence, make your own `config.py` file with the following variables
+
+```Py
+CSRF_ENABLED = True
+SQLALCHEMY_DATABASE_URI = "{db-engine}://{username}:{}password@{port}/{database-name}" 
+# eg. "mysql://root:@localhost/myncb"
+SECRET_KEY = "Your super-secret-key"
+
+UPLOAD_FOLDER = "./app/static/uploads"
+```
+
 ## Running Flask-Migrate
 Once your database is set up (preferably as above), run these commands
 

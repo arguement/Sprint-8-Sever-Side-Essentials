@@ -2,7 +2,7 @@ from app import app, db
 from flask import render_template, flash, url_for, session, redirect, request, make_response, jsonify
 from .models import User, Event
 from .forms import RegistrationForm, LoginForm, RegFrontEndForm,EventForm, CreateEventForm
-from .utils import token_required, form_errors
+from .utils import token_required, form_errors, admin_only, check_for_token
 from sqlalchemy import exc, and_, or_
 import jwt
 from cerberus import Validator
@@ -112,55 +112,56 @@ def createUser():
 
 @app.route('/user', methods=['GET'])
 @token_required
-def get_users(current_user):
+@admin_only
+def get_users():
     """Get a list of all users (including details)"""
-    if not current_user.admin:
-        return jsonify({'Message':'Sorry, function not permitted!'}), 401
 
     users = User.query.all()
     output = []
     for user in users:
         output.append(user.to_dict(show=["firstname", "lastname", "admin"]))
-    return jsonify({'users:': output})
+    return jsonify({'users:': output}),200
 
 
 @app.route('/user/<user_id>', methods=['GET'])
-# @token_required
+@token_required
+@admin_only
 def getUser(user_id):
     """Get information on the user with the given ID"""
     user = User.query.filter_by(id=user_id).first()
     if user:
-        return jsonify({'user': user.to_dict(show=["firstname", "lastname", "admin"])})
+        return jsonify({'user': user.to_dict(show=["firstname", "lastname", "admin"])}),200
     else:
-        return jsonify({'Message':'User does not exist'})
+        return jsonify({'Message':'User does not exist'}),404
 
 
 @app.route('/user/<user_id>', methods=['PUT'])
+@token_required
+@admin_only
 def makeAdmin(user_id):
     """"Toggles the user with the provided ID to an admin or not admin"""
     user = User.query.filter_by(id=user_id).first()
     if user:
         user.admin=True
         db.session.commit()
-        return jsonify({'Message':f'User with email {user.email} promoted to admin'})
+        return jsonify({'Message':f'User with email {user.email} promoted to admin'}),200
     else:
-        return jsonify({'Message':'User does not exist'})
+        return jsonify({'Message':'User does not exist'}),404
 
 
 @app.route('/user/<user_id>', methods=['DELETE'])
 @token_required
-def deleteUser(current_user, user_id):
+@admin_only
+def deleteUser(user_id):
     """Deletes the user with given ID"""
-    if not current_user.admin:
-        return jsonify({'Message':'Sorry, function not permitted!'}), 401
 
     user = User.query.filter_by(id=user_id).first()
     if user:
         db.session.delete(user)
         db.session.commit()
-        return jsonify({'Message':f'User with email {user.email} deleted'})
+        return jsonify({'Message':f'User with email {user.email} deleted'}),200
     else:
-        return jsonify({'Message':'User does not exist'})
+        return jsonify({'Message':'User does not exist'}),404
 
 
 @app.route('/event', methods=['POST'])
@@ -198,7 +199,7 @@ def create_event(current_user):
 
 
 @app.route('/event', methods=['GET'])
-@token_required
+@check_for_token
 def get_all_events(current_user):
     """Get a list of all (visible) events """
 
@@ -206,38 +207,45 @@ def get_all_events(current_user):
     if current_user.admin:
         events = Event.query.all()
     else:
-        events = Event.query.filter_by(visibility=1).all()
-
+        events = Event.query.filter((Event.user_id == current_user.id) | (Event.visibility == 1)).all()
 
     
     output = []
     for event in events: 
-        output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility"]))
+        output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id"]))
     return jsonify({'events': output})
 
 
 @app.route('/event/<event_id>', methods=['GET'])
-@token_required
+@check_for_token
 def get_event(current_user, event_id):
     """Get details on the event with the given ID"""
 
-    if current_user.admin:
-        event = Event.query.filter_by(id=event_id).first()
-    else:
-        event = Event.query.filter_by(id=event_id, user_id=current_user.id).first()
+    event = Event.query.filter_by(id=event_id).first()
 
-    
-    output = []
+    # check if event exists
+    if not event:
+        return jsonify({'message': 'Event does not exist.'})
+
+    if current_user.admin:
+        pass
+    else:
+        event = Event.query.filter((Event.id == event_id) & 
+                ((Event.visibility == True) | (Event.user_id == current_user.id))).first()
 
     if not event:
-        return jsonify({'message': 'Event does not exist.'})  
+        return jsonify({'message': 'You do not have permission to view this event'})
+
+    output = []
+
+      
         
-    output.append(event.to_dict(show=["title", "description", "cost", "start_date"]))  
+    output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id"]))  
     return jsonify({'Event' : output})
 
 
 @app.route('/event/user/<user_id>', methods=['GET'])
-@token_required
+@check_for_token
 def usersEvents(current_user,user_id):
     """"Get a list of all events created by a particular user. Only admins can get info on any user:
         regular users can only request their own events
@@ -251,9 +259,11 @@ def usersEvents(current_user,user_id):
         # User is not an admin, but requesting info on all of his/her events
         events = user.event.all()
     else:
-        return jsonify({'errors':'only admins can view events of another user'})
+        events = user.event.filter_by(visibility=True).all()
+        # return jsonify({'errors':'only admins can view events of another user'})
         
-    
+    if not events:
+        return jsonify({'message':'User has no events/no visible events'})
     
     columns = Event.__table__.columns.keys() # get all column names
     events_data = list(map(lambda x: x.to_dict(show=columns),events))
@@ -274,7 +284,6 @@ def update_event(current_user, event_id):
         return jsonify({"errors": f"{e}"})
 
     if not form.validate_on_submit():
-        # print("here")
         return jsonify({'errors':form_errors(form)})
 
     event = Event.query.filter_by(id=event_id).first()
@@ -288,12 +297,12 @@ def update_event(current_user, event_id):
 
         if "visibility" in data:
             return jsonify({"errors":"user cannot change visibilty"})
+    else:
+        if "visibility" in data:
+            data["visibility"] = True if data["visibility"].lower() == "true" else False
 
-        for k,v in data.items():    
-            setattr(event,k,v)
-
-        
-        # get new file info
+    try:
+        # check for new flyer file info
         flyer = form.flyer.data
         filename = secure_filename(flyer.filename)
         flyer.save(os.path.join(
@@ -309,10 +318,11 @@ def update_event(current_user, event_id):
             os.remove(file)
         else:    ## Show an error ##
             print("Error: %s file not found" % file)
-
-    else:
-        for k,v in data.items():
-            setattr(event,k,v)
+    except:
+        data.pop("flyer", None)
+    
+    for k,v in data.items():    
+        setattr(event,k,v)
 
 
     db.session.commit()
@@ -335,14 +345,4 @@ def delete_event(current_user,event_id):
     db.session.delete(event)
     db.session.commit()
     return jsonify({'message':'success'}),200
-
-
-@app.route("/formtest",methods=["GET","POST"])
-def formtest():
-    form = EventForm()
-    print(request.form.to_dict())
-    print(request.headers)
-    print(request.form)
-    print(request.args)
-    return "sd"
     

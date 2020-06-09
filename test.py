@@ -7,6 +7,10 @@ import json
 import base64
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta, datetime
+from io import BytesIO, StringIO
+import os
+# from _io import StringIO
+from werkzeug.datastructures import FileStorage
 
 
 def pwrd(password):
@@ -92,18 +96,110 @@ class FlaskTestCase(BaseTestCase):
         return dict_data
 
     def test_get_events(self):
-        response = self.get_token("h.potter@hogwarts.com","wizard")
+        response_with_token = self.get_token("h.potter@hogwarts.com","wizard")
         response = self.client.get('/user',content_type='application/json', headers={
-                'x-access-token': response["token"]
+                'x-access-token': response_with_token["token"]
             })
-        self.assertEqual(json.loads(response.data),{'Message':'Sorry, function not permitted!'}) # non admin cant access all events
+        self.assertEqual(json.loads(response.data),{'code': 'admin_only', 'description': 'Only admins can use this route'}) # non admin cant access all events
 
-        response = self.get_token("jwick@thecontinental.com","gunner")
+        response_with_token = self.get_token("jwick@thecontinental.com","gunner")
         response = self.client.get('/user',content_type='application/json', headers={
-                'x-access-token': response["token"]
+                'x-access-token': response_with_token["token"]
             })
         
         self.assertIsInstance(json.loads(response.data),dict) # admin events respoonse
+
+    def test_getUser(self):
+        response_with_token = self.get_token("jwick@thecontinental.com","gunner")
+        response = self.client.get('/user/3',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+        
+        self.assertIsInstance(json.loads(response.data),dict)
+        self.assertEqual(response.status_code,200)
+
+        response = self.client.get('/user/30',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+        self.assertEqual(response.status_code,404)
+
+    def test_makeAdmin(self):
+        response_with_token = self.get_token("jwick@thecontinental.com","gunner")
+        response = self.client.put('/user/3',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+        
+        self.assertIsInstance(json.loads(response.data),dict)
+        self.assertEqual(response.status_code,200)
+
+        response = self.client.put('/user/30',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+        self.assertEqual(response.status_code,404)
+
+    def test_deleteUser(self):
+        response_with_token = self.get_token("jwick@thecontinental.com","gunner")
+        response = self.client.delete('/user/3',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+        
+        self.assertIsInstance(json.loads(response.data),dict)
+        self.assertEqual(response.status_code,200)
+
+        response = self.client.delete('/user/30',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+        self.assertEqual(response.status_code,404)
+
+    def test_create_event(self):
+        response_with_token = self.get_token("jwick@thecontinental.com","gunner")
+        
+        my_file = FileStorage(
+        stream=open(os.path.join(app.config['UPLOAD_FOLDER'], "dashboard.PNG"), 'rb'),
+        filename="img1.jpg",
+        content_type="jpg",
+    )
+
+
+        response = self.client.post('/event',content_type='multipart/form-data', 
+                                        data={"title" : "new event",
+                                                "description": "scdscscdccsdc",
+                                                "category" : "new category",
+                                                "start_date" : "2019-10-06 10:20:03",
+                                                "end_date" : "2019-10-06 10:20:03",
+                                                "cost" : 2000,
+                                                "venue" : "some venue",
+                                                "flyer" : my_file},
+                                                headers={
+                    'x-access-token': response_with_token["token"]
+            })
+        
+        
+        self.assertTrue(response.status_code,201)
+
+        my_file = FileStorage(
+        stream=open(os.path.join(app.config['UPLOAD_FOLDER'], "dashboard.PNG"), 'rb'),
+        filename="img1.jpg",
+        content_type="jpg",
+    )
+
+        response = self.client.post('/event',content_type='multipart/form-data', 
+                                        data={"title" : "new event",
+                                                "description": "scdscscdccsdc",
+                                                "category" : "new category",
+                                                "start_date" : "2019-10-06 10:20:03",
+                                                "end_date" : "2019-10-06 10:20:03",
+                                                "flyer" : my_file},
+                                                headers={
+                    'x-access-token': response_with_token["token"]
+            })
+
+        dict_data = json.loads(response.data)
+        self.assertIsInstance(dict_data, dict) 
+        self.assertIn("errors",dict_data) 
+        
+
+        
 
 
     
