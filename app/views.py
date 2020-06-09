@@ -341,6 +341,8 @@ def delete_event(current_user,event_id):
 def formtest():
     form = EventForm()
     print(request.form.to_dict())
-    print(form.title.data)
+    print(request.headers)
+    print(request.form)
+    print(request.args)
     return "sd"
     
