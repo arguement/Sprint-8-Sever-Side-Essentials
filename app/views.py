@@ -15,10 +15,57 @@ import os
 def index():
     return render_template('index.html', title="My Main Page")
 
+@app.route('/new_event', methods=['POST', 'GET'])
+def create_event_front():
+    form = CreateEventForm()
+    if form.validate_on_submit():
+        title = form.title.data
+        description = form.description.data
+        category = form.category.data
+        start_date = form.start_date.data
+        end_date = form.end_date.data
+        cost = form.cost.data
+        venue = form.venue.data
+        flyer = form.flyer.data
+
+        filename = secure_filename(flyer.filename)
+        flyer.save(os.path.join(
+            app.config['UPLOAD_FOLDER'], filename
+        ))
+
+        event = Event(title=title, description=description, category=category, start_date=start_date, end_date=end_date, cost=cost, venue=venue, flyer=flyer.filename)
+
+        db.session.add(event)
+        db.session.commit()
+        session['user'] = user.firstname
+        flash('Event Successfully Created', category='success')
+
+        return redirect(url_for('events/user/'+user.id))
+
+    return render_template('event.html', title="Create An Event", form=form, user=session['user'], events=events)
+
+@app.route('/myevents', methods=['GET'])
+def events_user():
+    #current_user =
+    events = Event.query.filter(Event.user_id == current_user.id).all()
+
+    return render_template('user_events.html', title='My Events', user=session['user'], events=events)
+
 @app.route('/events', methods=['GET'])
 def events():
+    #current_user =
+    #if current_user.admin:
     events = Event.query.all()
+    #else:
+    #    events = Event.query.filter((Event.user_id == current_user.id) | (Event.visibility == 1)).all()
+
     return render_template('events.html', title='Events', user=session['user'], events=events)
+
+@app.route('/users', methods=['GET'])
+def user_front():
+    users = User.query.all()
+
+    return render_template('users.html', title='Users', user=session['user'], users=users)
 
 @app.route('/login-front', methods=['POST', 'GET'])
 def login_front():
@@ -58,7 +105,7 @@ def register():
         db.session.commit()
         flash('Successfully Registered', category='success')
         return redirect(url_for('index'))
-    
+
     return render_template('register.html', title="Register", form=form)
 
 
@@ -209,9 +256,9 @@ def get_all_events(current_user):
     else:
         events = Event.query.filter((Event.user_id == current_user.id) | (Event.visibility == 1)).all()
 
-    
+
     output = []
-    for event in events: 
+    for event in events:
         output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id"]))
     return jsonify({'events': output})
 
@@ -230,7 +277,7 @@ def get_event(current_user, event_id):
     if current_user.admin:
         pass
     else:
-        event = Event.query.filter((Event.id == event_id) & 
+        event = Event.query.filter((Event.id == event_id) &
                 ((Event.visibility == True) | (Event.user_id == current_user.id))).first()
 
     if not event:
@@ -238,9 +285,9 @@ def get_event(current_user, event_id):
 
     output = []
 
-      
-        
-    output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id"]))  
+
+
+    output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id"]))
     return jsonify({'Event' : output})
 
 
@@ -261,16 +308,16 @@ def usersEvents(current_user,user_id):
     else:
         events = user.event.filter_by(visibility=True).all()
         # return jsonify({'errors':'only admins can view events of another user'})
-        
+
     if not events:
         return jsonify({'message':'User has no events/no visible events'})
-    
+
     columns = Event.__table__.columns.keys() # get all column names
     events_data = list(map(lambda x: x.to_dict(show=columns),events))
-    
-    
+
+
     return jsonify({'events': events_data}),200
-    
+
 
 @app.route('/event/<event_id>', methods=['PUT'])
 @token_required
@@ -291,7 +338,7 @@ def update_event(current_user, event_id):
         return jsonify({'errors':'event doesnt exist'})
 
     if current_user.admin == False:
-        
+
         if current_user.id != event.user_id:
             return jsonify({"errors":"you dont have permission to change this event"})
 
@@ -320,8 +367,8 @@ def update_event(current_user, event_id):
             print("Error: %s file not found" % file)
     except:
         data.pop("flyer", None)
-    
-    for k,v in data.items():    
+
+    for k,v in data.items():
         setattr(event,k,v)
 
 
@@ -345,4 +392,3 @@ def delete_event(current_user,event_id):
     db.session.delete(event)
     db.session.commit()
     return jsonify({'message':'success'}),200
-    

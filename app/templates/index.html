@@ -3,4 +3,18 @@
 {% block content %}
     {% include "flash.html" %}
     {% from "_formhelpers.html" import render_field %}
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col align-items-center">
+          <p>
+          </p>
+        </div>
+        <div class="col align-items-center">
+          <p>
+          <a class="btn btn-primary" href="/login-front" role="button">Log In</a>
+          <a class="btn btn-success" href="/register" role="button">Register</a>
+          </p>
+        </div>
+      </div>
+    </div>
 {% endblock %}

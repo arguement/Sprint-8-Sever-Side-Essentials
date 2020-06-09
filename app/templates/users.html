@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block nav %}
+<i class="navbar-brand">Hi, {{user}}</i>
+<a href='/logout'>[Log Out]</a><br>
+{% endblock %}
+
+{% block content %}
+{% include "flash.html" %}
+
+<ul class="nav nav-tabs nav-fill">
+  <li class="nav-item">
+    <a class="nav-link" href="/events">Events</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="/myevents">My Events</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="/new_event">Create An Event</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link active" href="/users">{{title}}</a>
+  </li>
+</ul>
+
+{% if users %}
+<table class="table">
+  <thead class="thead-dark">
+    <tr>
+      <th scope="col">ID</th>
+      <th scope="col">Firstname</th>
+      <th scope="col">Lastname</th>
+      <th scope="col">Email</th>
+      <th scope="col">Admin</th>
+    </tr>
+  </thead>
+  {% for u in users %}
+  <tr>
+    <th>{{u.id}}</th>
+    <th>{{u.firstname}}</th>
+    <th>{{u.lastname}}</th>
+    <th>{{u.email}}</th>
+    <th>{{u.admin}}</th>
+  </tr>
+  {% endfor %}
+</table>
+
+{% else %}
+    <p>There are no users</p>
+
+{% endif %}
+
+{% endblock %}

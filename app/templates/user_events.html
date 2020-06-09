@@ -11,10 +11,10 @@
 
 <ul class="nav nav-tabs nav-fill">
   <li class="nav-item">
-    <a class="nav-link active" href="/events">{{title}}</a>
+    <a class="nav-link" href="/events">Events</a>
   </li>
   <li class="nav-item">
-    <a class="nav-link" href="/myevents">My {{title}}</a>
+    <a class="nav-link active" href="/myevents">{{title}}</a>
   </li>
   <li class="nav-item">
     <a class="nav-link" href="/new_event">Create An Event</a>
@@ -60,6 +60,7 @@
 
     </tr>
     {% endfor %}
+    <hr>
     </table>
 {% else %}
     <p>There are no events</p>

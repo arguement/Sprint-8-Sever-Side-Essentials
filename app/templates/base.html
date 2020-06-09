@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
- 
+
     <head>
         <title>{{title}}</title>
 
@@ -11,32 +11,30 @@
 
 
     </head>
-    
+
     <body>
 
             <nav class="navbar fixed-top navbar-dark bg-dark">
-            <a class="navbar-brand" href="/">My First App</a>
+            <a class="navbar-brand" href="/">EVENT MANAGER SYSTEM</a>
+            {% block nav %} {% endblock %}
             </nav>
 
 
             <div class="jumbotron">
-                <p>
-                <a class="btn btn-success" href="/register" role="button">Register</a>
-                <a class="btn btn-primary" href="/login-front" role="button">Log In</a>
-                </p>
+
 
                 {% block content %} {% endblock %}
 
             </div>
-    
-    
-    
+
+
+
             <footer class="footer">
                 <div class="container text-center">
-                    <p>&copy; My First App </p>
+                    <p>&copy; Team Order1.EXE </p>
                 </div>
             </footer>
-    
+
     </body>
-    
+
 </html>

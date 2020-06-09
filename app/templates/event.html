@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block nav %}
+<i class="navbar-brand">Hi, {{user}}</i>
+<a href='/logout'>[Log Out]</a><br>
+{% endblock %}
+
+{% block content %}
+{% include "flash.html" %}
+
+{% from "_formhelpers.html" import render_field %}
+
+<ul class="nav nav-tabs nav-fill">
+  <li class="nav-item">
+    <a class="nav-link" href="/events">Events</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="/myevents">My Events</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link active" href="/new_event">{{title}}</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="/users">Users</a>
+  </li>
+</ul>
+
+
+<form class="form" method="post" action="/event">
+
+    {{ form.hidden_tag() }}
+  <div class="form-row">
+      <div class="col-md-4 mb-3">
+        {{ render_field(form.title) }}
+      </div>
+      <div class="col-md-4 mb-3">
+      {{ render_field(form.start_date) }}
+      </div>
+      <div class="col-md-4 mb-3">
+      {{ render_field(form.end_date) }}
+      </div>
+  </div>
+  <div class="form-row">
+      <div class="col-md-4 mb-3">
+        {{ render_field(form.category) }}
+      </div>
+      <div class="col-md-4 mb-3">
+      {{ render_field(form.venue) }}
+      </div>
+      <div class="col-md-4 mb-3">
+      {{ render_field(form.cost) }}
+      </div>
+  </div>
+  <div class="form-row">
+      <div class="col-md-4 mb-3">
+        {{ render_field(form.description) }}
+      </div>
+      <div class="col-md-4 mb-3">
+        {{ render_field(form.flyer) }}
+      </div>
+      <div class="col-md-4 mb-3">
+        <p><input class="btn btn-primary" type="submit" value="Create"></p>
+      </div>
+
+  </div>
+</form>
+
+{% endblock %}
