@@ -60,6 +60,20 @@ class BaseTestCase(TestCase):
         db.session.remove()
         db.drop_all()
 
+        # remove all test files
+        file = os.path.join(
+            app.config['UPLOAD_FOLDER'], "img1.jpg"
+        )
+        if os.path.isfile(file):
+            os.remove(file)
+
+        file = os.path.join(
+            app.config['UPLOAD_FOLDER'], "img2.jpg"
+        )
+        if os.path.isfile(file):
+            os.remove(file)
+        
+
 class FlaskTestCase(BaseTestCase):
     
     def test_add_to_db(self):
@@ -94,6 +108,23 @@ class FlaskTestCase(BaseTestCase):
             })
         dict_data = json.loads(response.data)
         return dict_data
+    
+    def get_file(self,filen,filetype,newname):
+    #     my_file = FileStorage(
+    #     stream=open(os.path.join(r"app\static\test_images", "dashboard.PNG"), 'rb'),
+    #     filename="img1.jpg",
+    #     content_type="jpg",
+    # )
+        TEST_UPLOAD_FOLDER=r"app\static\test_images"
+       
+        file = FileStorage(
+            stream=open(os.path.join(TEST_UPLOAD_FOLDER, filen), 'rb'),
+            filename=newname,
+            content_type=filetype,
+        )
+        return file
+        
+
 
     def test_get_events(self):
         response_with_token = self.get_token("h.potter@hogwarts.com","wizard")
@@ -154,13 +185,14 @@ class FlaskTestCase(BaseTestCase):
     def test_create_event(self):
         response_with_token = self.get_token("jwick@thecontinental.com","gunner")
         
-        my_file = FileStorage(
-        stream=open(os.path.join(app.config['UPLOAD_FOLDER'], "dashboard.PNG"), 'rb'),
-        filename="img1.jpg",
-        content_type="jpg",
-    )
+    #     my_file = FileStorage(
+    #     stream=open(os.path.join(r"app\static\test_images", "dashboard.PNG"), 'rb'),
+    #     filename="img1.jpg",
+    #     content_type="jpg",
+    # )
+        my_file = self.get_file("dashboard.PNG","jpg","img2.jpg")
 
-
+        print(response_with_token)
         response = self.client.post('/event',content_type='multipart/form-data', 
                                         data={"title" : "new event",
                                                 "description": "scdscscdccsdc",
@@ -174,14 +206,10 @@ class FlaskTestCase(BaseTestCase):
                     'x-access-token': response_with_token["token"]
             })
         
-        
+        my_file.close()
         self.assertTrue(response.status_code,201)
 
-        my_file = FileStorage(
-        stream=open(os.path.join(app.config['UPLOAD_FOLDER'], "dashboard.PNG"), 'rb'),
-        filename="img1.jpg",
-        content_type="jpg",
-    )
+        my_file = self.get_file("dashboard.PNG","jpg","img2.jpg")
 
         response = self.client.post('/event',content_type='multipart/form-data', 
                                         data={"title" : "new event",
@@ -193,10 +221,124 @@ class FlaskTestCase(BaseTestCase):
                                                 headers={
                     'x-access-token': response_with_token["token"]
             })
-
+        my_file.close()
         dict_data = json.loads(response.data)
         self.assertIsInstance(dict_data, dict) 
         self.assertIn("errors",dict_data) 
+    
+    def test_get_user(self):
+        response_with_token = self.get_token("jwick@thecontinental.com","gunner")
+        response = self.client.get('/user',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+        
+        self.assertIsInstance(json.loads(response.data),dict)
+        self.assertEqual(response.status_code,200)
+
+    
+    def test_get_event(self):
+        response_with_token = self.get_token("jwick@thecontinental.com","gunner")
+        response = self.client.get('/event/3',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+        self.assertEqual(response.status_code,200)
+
+        response_with_token = self.get_token("keffs@gmail.com", "kyeeks")
+        response = self.client.get('/event/2',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+
+        self.assertEqual(response.status_code,403)
+    
+    def test_get_all_events(self):
+        response_with_token = self.get_token("jwick@thecontinental.com","gunner")
+        response = self.client.get('/event',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+
+        self.assertEqual(response.status_code,200)
+
+    def test_usersEvents(self):
+        response_with_token = self.get_token("jwick@thecontinental.com","gunner")
+        response = self.client.get('/event/user/1',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+
+        dict_data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code,200)
+        self.assertIsInstance(json.loads(response.data),dict)
+        self.assertIn("events",dict_data)
+        self.assertEqual(2,len(dict_data["events"])) #return 2 entriess
+
+    def test_update_event(self):
+        response_with_token = self.get_token("jwick@thecontinental.com","gunner")
+       
+
+
+        my_file = self.get_file("testimg2.png","jpg","img3.jpg")
+        response = self.client.put('/event/30',content_type='multipart/form-data', 
+                                        data={"title" : "new event",
+                                                "description": "scdscscdccsdc",
+                                                "category" : "new category",
+                                                "start_date" : "2019-10-06 10:20:03",
+                                                "end_date" : "2019-10-06 10:20:03",
+                                                "flyer" : my_file},
+                                                headers={
+                    'x-access-token': response_with_token["token"]
+            })
+
+        my_file.close()
+        dict_data = json.loads(response.data)
+        
+        self.assertEqual(dict_data,{'errors':'event doesnt exist'})
+        
+        # response = self.client.put('/event/1',content_type='multipart/form-data', 
+        #                                 data={"title" : "new event",
+        #                                         "description": "scdscscdccsdc",
+        #                                         "category" : "new category",
+        #                                         "start_date" : "2019-10-06 10:20:03",
+        #                                         "end_date" : "2019-10-06 10:20:03",
+        #                                         "visibility":"True"},
+        #                                         headers={
+        #             'x-access-token': response_with_token["token"]
+        #     })
+
+        # dict_data = json.loads(response.data)
+        # print(dict_data)
+        
+        # self.assertEqual(dict_data,{'errors':'event doesnt exist'})
+
+    def test_delete_event(self):
+        response_with_token = self.get_token("jwick@thecontinental.com","gunner")
+        response = self.client.delete('/event/1',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+
+        dict_data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code,200)
+
+        response = self.client.delete('/event/300',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+
+        dict_data = json.loads(response.data)
+        self.assertEqual(response.status_code,404)
+
+        response_with_token = self.get_token("keffs@gmail.com", "kyeeks")
+        response = self.client.delete('/event/3',content_type='application/json', headers={
+                'x-access-token': response_with_token["token"]
+            })
+
+        dict_data = json.loads(response.data)
+        self.assertEqual(response.status_code,403)
+
+
+
+        
+
+
         
 
         

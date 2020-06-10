@@ -213,7 +213,7 @@ def get_all_events(current_user):
     output = []
     for event in events: 
         output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id"]))
-    return jsonify({'events': output})
+    return jsonify({'events': output}),200
 
 
 @app.route('/event/<event_id>', methods=['GET'])
@@ -234,14 +234,14 @@ def get_event(current_user, event_id):
                 ((Event.visibility == True) | (Event.user_id == current_user.id))).first()
 
     if not event:
-        return jsonify({'message': 'You do not have permission to view this event'})
+        return jsonify({'message': 'You do not have permission to view this event'}),403
 
     output = []
 
       
         
     output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id"]))  
-    return jsonify({'Event' : output})
+    return jsonify({'Event' : output}),200
 
 
 @app.route('/event/user/<user_id>', methods=['GET'])
@@ -336,13 +336,14 @@ def delete_event(current_user,event_id):
     """Delete the event with given ID. Only admins or the user who created an event can delete it"""
     event = Event.query.filter_by(id=event_id).first()
     if not event:
-        return jsonify({'errors':'event doesnt exist'})
+        return jsonify({'errors':'event doesnt exist'}),404
 
     if current_user.admin == False:
         if current_user.id != event.user_id:
-            return jsonify({"errors":"you dont have permission to change this event"})
+            return jsonify({"errors":"you dont have permission to change this event"}),403
 
     db.session.delete(event)
     db.session.commit()
     return jsonify({'message':'success'}),200
-    
+
+
