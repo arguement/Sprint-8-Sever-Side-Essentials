@@ -167,7 +167,7 @@ def get_users():
     output = []
     for user in users:
         output.append(user.to_dict(show=["firstname", "lastname", "admin"]))
-    return jsonify({'users:': output})
+    return jsonify({'users:': output}),200
 
 
 @app.route('/user/<user_id>', methods=['GET'])
@@ -177,9 +177,9 @@ def getUser(user_id):
     """Get information on the user with the given ID"""
     user = User.query.filter_by(id=user_id).first()
     if user:
-        return jsonify({'user': user.to_dict(show=["firstname", "lastname", "admin"])})
+        return jsonify({'user': user.to_dict(show=["firstname", "lastname", "admin"])}),200
     else:
-        return jsonify({'Message':'User does not exist'})
+        return jsonify({'Message':'User does not exist'}),404
 
 
 @app.route('/user/<user_id>', methods=['PUT'])
@@ -191,9 +191,9 @@ def makeAdmin(user_id):
     if user:
         user.admin=True
         db.session.commit()
-        return jsonify({'Message':f'User with email {user.email} promoted to admin'})
+        return jsonify({'Message':f'User with email {user.email} promoted to admin'}),200
     else:
-        return jsonify({'Message':'User does not exist'})
+        return jsonify({'Message':'User does not exist'}),404
 
 
 @app.route('/user/<user_id>', methods=['DELETE'])
@@ -206,9 +206,9 @@ def deleteUser(user_id):
     if user:
         db.session.delete(user)
         db.session.commit()
-        return jsonify({'Message':f'User with email {user.email} deleted'})
+        return jsonify({'Message':f'User with email {user.email} deleted'}),200
     else:
-        return jsonify({'Message':'User does not exist'})
+        return jsonify({'Message':'User does not exist'}),404
 
 
 @app.route('/event', methods=['POST'])
@@ -260,7 +260,7 @@ def get_all_events(current_user):
     output = []
     for event in events:
         output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id"]))
-    return jsonify({'events': output})
+    return jsonify({'events': output}),200
 
 
 @app.route('/event/<event_id>', methods=['GET'])
@@ -281,14 +281,14 @@ def get_event(current_user, event_id):
                 ((Event.visibility == True) | (Event.user_id == current_user.id))).first()
 
     if not event:
-        return jsonify({'message': 'You do not have permission to view this event'})
+        return jsonify({'message': 'You do not have permission to view this event'}),403
 
     output = []
 
-
-
-    output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id"]))
-    return jsonify({'Event' : output})
+      
+        
+    output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id"]))  
+    return jsonify({'Event' : output}),200
 
 
 @app.route('/event/user/<user_id>', methods=['GET'])
@@ -383,11 +383,11 @@ def delete_event(current_user,event_id):
     """Delete the event with given ID. Only admins or the user who created an event can delete it"""
     event = Event.query.filter_by(id=event_id).first()
     if not event:
-        return jsonify({'errors':'event doesnt exist'})
+        return jsonify({'errors':'event doesnt exist'}),404
 
     if current_user.admin == False:
         if current_user.id != event.user_id:
-            return jsonify({"errors":"you dont have permission to change this event"})
+            return jsonify({"errors":"you dont have permission to change this event"}),403
 
     db.session.delete(event)
     db.session.commit()
