@@ -19,9 +19,11 @@
   <li class="nav-item">
     <a class="nav-link" href="/new_event">Create An Event</a>
   </li>
+  {% if session['admin'] %}
   <li class="nav-item">
     <a class="nav-link" href="/users">Users</a>
   </li>
+  {% endif %}
 </ul>
 
 
@@ -39,7 +41,7 @@
     </thead>
     {% for e in events %}
     <tr>
-      <th>{{e.flyer}}</th>
+      <th><img class="flyer" src="..\static\uploads\{{e.flyer}}" alt="No image available"></th>
 
       <th>
         Title : {{e.title}}<br>
@@ -56,7 +58,7 @@
         Cost : {{cost}}<br>
       </th>
 
-      <th>{{e.visibility}} <button type="button" class="btn btn-secondary btn-sm" disabled> Change</button></th>
+      <th>{{e.visibility}} {% if session['admin'] %}<button type="button" class="btn btn-secondary btn-sm" disabled> Change</button>{% endif %}</th>
 
     </tr>
     {% endfor %}

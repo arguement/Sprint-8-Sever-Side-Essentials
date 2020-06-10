@@ -20,13 +20,15 @@
   <li class="nav-item">
     <a class="nav-link active" href="/new_event">{{title}}</a>
   </li>
+  {% if session['admin'] %}
   <li class="nav-item">
     <a class="nav-link" href="/users">Users</a>
   </li>
+  {% endif %}
 </ul>
 
 
-<form class="form" method="post" action="/event">
+<form class="form" method="post" action="/new_event" enctype="multipart/form-data">
 
     {{ form.hidden_tag() }}
   <div class="form-row">

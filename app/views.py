@@ -1,7 +1,7 @@
 from app import app, db
 from flask import render_template, flash, url_for, session, redirect, request, make_response, jsonify
 from .models import User, Event
-from .forms import RegistrationForm, LoginForm, RegFrontEndForm,EventForm, CreateEventForm
+from .forms import RegistrationForm, LoginForm, RegFrontEndForm,EventForm, CreateEventForm, CreateEventForm_Front
 from .utils import token_required, form_errors, admin_only, check_for_token
 from sqlalchemy import exc, and_, or_
 import jwt
@@ -17,7 +17,7 @@ def index():
 
 @app.route('/new_event', methods=['POST', 'GET'])
 def create_event_front():
-    form = CreateEventForm()
+    form = CreateEventForm_Front()
     if form.validate_on_submit():
         title = form.title.data
         description = form.description.data
@@ -37,35 +37,33 @@ def create_event_front():
 
         db.session.add(event)
         db.session.commit()
-        session['user'] = user.firstname
         flash('Event Successfully Created', category='success')
 
-        return redirect(url_for('events/user/'+user.id))
+        return redirect(events)
 
-    return render_template('event.html', title="Create An Event", form=form, user=session['user'], events=events)
+    return render_template('event.html', title="Create An Event", form=form, user=session['username'], events=events)
 
 @app.route('/myevents', methods=['GET'])
 def events_user():
     #current_user =
-    events = Event.query.filter(Event.user_id == current_user.id).all()
+    events = Event.query.filter(Event.user_id == session['id']).all()
 
-    return render_template('user_events.html', title='My Events', user=session['user'], events=events)
+    return render_template('user_events.html', title='My Events', user=session['username'], events=events)
 
 @app.route('/events', methods=['GET'])
 def events():
-    #current_user =
-    #if current_user.admin:
-    events = Event.query.all()
-    #else:
-    #    events = Event.query.filter((Event.user_id == current_user.id) | (Event.visibility == 1)).all()
+    if session['admin']:
+        events = Event.query.all()
+    else:
+        events = Event.query.filter((Event.user_id == session['id']) | (Event.visibility == 1)).all()
 
-    return render_template('events.html', title='Events', user=session['user'], events=events)
+    return render_template('events.html', title='Events', user=session['username'], events=events)
 
 @app.route('/users', methods=['GET'])
 def user_front():
     users = User.query.all()
 
-    return render_template('users.html', title='Users', user=session['user'], users=users)
+    return render_template('users.html', title='Users', user=session['username'], users=users)
 
 @app.route('/login-front', methods=['POST', 'GET'])
 def login_front():
@@ -78,15 +76,19 @@ def login_front():
             flash('Credentials incorrect', category='danger')
             return redirect(url_for('login_front'))
         if check_password_hash(user.password, password):
-            session['user'] = user.firstname
+            session['username'] = user.firstname
+            session['id'] = user.id
+            session['admin'] = user.admin
             flash('Successfully logged in', category='success')
             return redirect(url_for('events'))
     return render_template('login.html', title='Login', form=form)
 
 @app.route('/logout', methods=['GET'])
 def logout():
-    if 'user' in session:
-        session.pop('user', None)
+    
+    session.pop('username', None)
+    session.pop('admin', None)
+    session.pop('id', None)
     flash('You have logged out successfully', category='success')
     return redirect(url_for('login_front'))
 
@@ -259,7 +261,7 @@ def get_all_events(current_user):
 
     output = []
     for event in events:
-        output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id"]))
+        output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id", "flyer"]))
     return jsonify({'events': output}),200
 
 
@@ -287,7 +289,7 @@ def get_event(current_user, event_id):
 
       
         
-    output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id"]))  
+    output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id", "flyer"]))  
     return jsonify({'Event' : output}),200
 
 

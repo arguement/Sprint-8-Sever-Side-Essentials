@@ -1,7 +1,8 @@
 from flask_wtf import FlaskForm
 
 from flask_wtf.file import FileField, FileRequired, FileAllowed
-from wtforms import TextField, PasswordField, TextAreaField, DateTimeField , DecimalField, BooleanField
+from wtforms import TextField, PasswordField, TextAreaField, DecimalField, BooleanField, DateField
+from wtforms.fields.html5 import DateTimeLocalField
 
 from wtforms.validators import Required, Email, EqualTo, ValidationError, Length, DataRequired
 
@@ -37,8 +38,8 @@ class EventForm(FlaskForm):
     title = TextField('Title')
     description = TextAreaField("Description")
     category = TextField('Category')
-    start_date = DateTimeField('Start Date')
-    end_date = DateTimeField('End Date',validators=[check_end_date_greater_than_start])
+    start_date = DateTimeLocalField('Start Date')
+    end_date = DateTimeLocalField('End Date',validators=[check_end_date_greater_than_start])
     cost = DecimalField(places=2)
     venue = TextField('Venue')
     flyer = FileField("Flyer",validators=[FileAllowed(['jpg', 'png', 'Images only!'])])
@@ -53,8 +54,23 @@ class CreateEventForm(FlaskForm):
     title = TextField('Title', [Required()])
     description = TextAreaField('Description', [Required()])
     category = TextField('Category', [Required()])
-    start_date = DateTimeField('Start Date:', validators=[Required()])
-    end_date = DateTimeField('End Date:', validators=[Required(), check_end_date_greater_than_start])
+    start_date = DateTimeLocalField('Start Date:', validators=[Required()])
+    end_date = DateTimeLocalField('End Date:', validators=[Required(), check_end_date_greater_than_start])
+    cost = DecimalField(places=2, validators=[DataRequired()])
+    venue = TextField('Venue: ')
+    flyer = FileField("Flyer",validators=[FileRequired(),FileAllowed(['jpg', 'png', 'Images only!'])])
+    # visibility = BooleanField('Visible: ')
+
+class CreateEventForm_Front(FlaskForm):
+    """Used to create an event on the front end"""
+    class Meta:
+        csrf = False
+
+    title = TextField('Title', [Required()])
+    description = TextAreaField('Description', [Required()])
+    category = TextField('Category', [Required()])
+    start_date = DateField('Start Date:', validators=[Required()])
+    end_date = DateField('End Date:', validators=[Required(), check_end_date_greater_than_start])
     cost = DecimalField(places=2, validators=[DataRequired()])
     venue = TextField('Venue: ')
     flyer = FileField("Flyer",validators=[FileRequired(),FileAllowed(['jpg', 'png', 'Images only!'])])
