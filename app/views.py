@@ -33,13 +33,13 @@ def create_event_front():
             app.config['UPLOAD_FOLDER'], filename
         ))
 
-        event = Event(title=title, description=description, category=category, start_date=start_date, end_date=end_date, cost=cost, venue=venue, flyer=flyer.filename)
+        event = Event(title=title, description=description, category=category, start_date=start_date, end_date=end_date, cost=cost, venue=venue, flyer=flyer.filename, user_id=session['id'])
 
         db.session.add(event)
         db.session.commit()
         flash('Event Successfully Created', category='success')
 
-        return redirect(events)
+        return redirect(url_for('events'))
 
     return render_template('event.html', title="Create An Event", form=form, user=session['username'], events=events)
 
