@@ -6,7 +6,7 @@
 {% from "_formhelpers.html" import render_field %}
 <h3>{{title}}</h3>
 
-<form class="form" method="post" action="/login-front">
+<!-- <form class="form" method="post" action="/login-front">
     {{ form.hidden_tag() }}
     <dl>
         {{ render_field(form.email) }}
@@ -14,6 +14,24 @@
     </dl>
     <p><input type="submit" value="Login"></p>
 
-</form>
+</form> -->
+
+<div class="d-flex justify-content-center">
+    <div class="register-form cus-form-cont">
+        <form id="loginform" action="/login-front" method="POST" >
+                <div class="form-group "  id="uploadForm">
+                    {{ render_field(form.email,class='form-control') }}
+                  
+                </div>
+                <div class="form-group">
+                    {{ render_field(form.password,class='form-control') }}
+                </div>
+                
+                
+                <button type="submit" class="btn btn-success  cus-btn">Login</button>
+        </form>
+    </div>
+</div>
+</div>
 
 {% endblock %}

@@ -7,6 +7,7 @@ from wtforms.fields.html5 import DateTimeLocalField
 from wtforms.validators import Required, Email, EqualTo, ValidationError, Length, DataRequired
 
 from .custom_validators import check_end_date_greater_than_start
+import datetime
 
 class RegistrationForm(FlaskForm):
     class Meta:
@@ -69,8 +70,8 @@ class CreateEventForm_Front(FlaskForm):
     title = TextField('Title', [Required()])
     description = TextAreaField('Description', [Required()])
     category = TextField('Category', [Required()])
-    start_date = DateField('Start Date:', validators=[Required()])
-    end_date = DateField('End Date:', validators=[Required(), check_end_date_greater_than_start])
+    start_date = DateTimeLocalField('Start Date:', validators=[Required()],format='%Y-%m-%dT%H:%M')
+    end_date = DateTimeLocalField('End Date:', validators=[Required(), check_end_date_greater_than_start],format='%Y-%m-%dT%H:%M')
     cost = DecimalField(places=2, validators=[DataRequired()])
     venue = TextField('Venue: ')
     flyer = FileField("Flyer",validators=[FileRequired(),FileAllowed(['jpg', 'png', 'Images only!'])])

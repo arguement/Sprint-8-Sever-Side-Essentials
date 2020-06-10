@@ -33,34 +33,34 @@
     {{ form.hidden_tag() }}
   <div class="form-row">
       <div class="col-md-4 mb-3">
-        {{ render_field(form.title) }}
+        {{ render_field(form.title,class='form-control') }}
       </div>
       <div class="col-md-4 mb-3">
-      {{ render_field(form.start_date) }}
+      {{ render_field(form.start_date,class='form-control') }}
       </div>
       <div class="col-md-4 mb-3">
-      {{ render_field(form.end_date) }}
-      </div>
-  </div>
-  <div class="form-row">
-      <div class="col-md-4 mb-3">
-        {{ render_field(form.category) }}
-      </div>
-      <div class="col-md-4 mb-3">
-      {{ render_field(form.venue) }}
-      </div>
-      <div class="col-md-4 mb-3">
-      {{ render_field(form.cost) }}
+      {{ render_field(form.end_date,class='form-control') }}
       </div>
   </div>
   <div class="form-row">
       <div class="col-md-4 mb-3">
-        {{ render_field(form.description) }}
+        {{ render_field(form.category,class='form-control') }}
       </div>
       <div class="col-md-4 mb-3">
-        {{ render_field(form.flyer) }}
+      {{ render_field(form.venue,class='form-control') }}
       </div>
       <div class="col-md-4 mb-3">
+      {{ render_field(form.cost,class='form-control') }}
+      </div>
+  </div>
+  <div class="form-row">
+      <div class="col-md-4 mb-3">
+        {{ render_field(form.description,class='form-control') }}
+      </div>
+      <div class="col-md-4 mb-3">
+        {{ render_field(form.flyer,class='form-control') }}
+      </div>
+      <div class="col-md-4 mb-3 d-flex align-items-end">
         <p><input class="btn btn-primary" type="submit" value="Create"></p>
       </div>
 

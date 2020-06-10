@@ -1,0 +1,11 @@
+.register-form{
+    width: 100%; 
+    
+    max-width: 600px;
+}
+.register-form form{
+    width: 100%;
+}
+.cus-btn{
+    width: 100%;
+}

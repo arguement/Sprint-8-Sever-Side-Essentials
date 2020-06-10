@@ -39,8 +39,8 @@ def create_event_front():
         db.session.commit()
         flash('Event Successfully Created', category='success')
 
-        return redirect(events)
-
+        return redirect(url_for("events"))
+    
     return render_template('event.html', title="Create An Event", form=form, user=session['username'], events=events)
 
 @app.route('/myevents', methods=['GET'])
