@@ -26,13 +26,13 @@ u3 = User(firstname="Nathaniel", lastname="Christie", email="nc_hammer@gmail.com
 u4 = User(firstname="Kayla", lastname="Effs", email="keffs@gmail.com", password=pwrd("kyeeks"), admin=False)
 
 e1 = Event(title="Continental Breakfast", description="Assasins' breakfast retreat", category="Dining", start_date=datetime(2020,2,20,8), 
-           end_date=datetime(2020,2,20,8) + timedelta(hours=2), cost=5000, visibility=False, user_id=1)
+           end_date=datetime(2020,2,20,8) + timedelta(hours=2), cost=5000, visibility=False, user_id=1, flyer="event-calendar-icon.png")
 e2 = Event(title="Yule Ball", description="In celebration of the Triwizard Tournament", category="Party", start_date=datetime(2020,3,15,19), 
-           end_date=datetime(2020,3,15,19) + timedelta(hours=5), cost=46000, visibility=False, user_id=2)
+           end_date=datetime(2020,3,15,19) + timedelta(hours=5), cost=46000, visibility=False, user_id=2, flyer="event-calendar-icon.png")
 e3 = Event(title="NCB Presentation", description="Sprint 8 Server Side Essentials Demo", category="Conference", start_date=datetime(2020,6,11,14), 
-           end_date=datetime(2020,6,11,14) + timedelta(hours=3), cost=46000, visibility=True, user_id=3)
+           end_date=datetime(2020,6,11,14) + timedelta(hours=3), cost=46000, visibility=True, user_id=3, flyer="event-calendar-icon.png")
 e4 = Event(title="Dog Tamer's Conference", description="Learn how to keep your dog alive", category="Conference", start_date=datetime(2020,6,11,8), 
-           end_date=datetime(2020,6,11,8) + timedelta(hours=5), cost=900000, visibility=True, user_id=1)
+           end_date=datetime(2020,6,11,8) + timedelta(hours=5), cost=900000, visibility=True, user_id=1, flyer="event-calendar-icon.png")
 
 db.session.add(u1)
 db.session.add(u2)

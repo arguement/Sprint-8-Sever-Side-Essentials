@@ -25,3 +25,4 @@ env/
 
 # Config Files
 config.py
+!event-calendar-icon.png
