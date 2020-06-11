@@ -41,7 +41,7 @@
     </thead>
     {% for e in events %}
     <tr>
-      <th><img class="flyer" src="..\static\uploads\{{e.flyer}}" alt="No image available"></th>
+      <th><img class="flyer" src="..\static\uploads\{{e.flyer}}" alt="No image available" class="img-fluid" ></th>
 
       <th>
         Title : {{e.title}}<br>
@@ -58,7 +58,7 @@
         Cost : {{e.cost}}<br>
       </th>
 
-      <th>{{e.visibility}} {% if session['admin'] %}<button type="button" class="btn btn-secondary btn-sm" disabled> Change</button>{% endif %}</th>
+    <th>{{e.visibility}} {% if session['admin'] %}<a class="btn btn-secondary btn-sm" href="{{url_for('events_visibility',event_id=e.id)}}"> Change</a>{% endif %}</th>
 
     </tr>
     {% endfor %}

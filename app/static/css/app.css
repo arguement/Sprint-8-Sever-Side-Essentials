@@ -9,3 +9,8 @@
 .cus-btn{
     width: 100%;
 }
+
+
+th > img{
+    max-width: 200px;
+}
