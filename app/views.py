@@ -39,8 +39,8 @@ def create_event_front():
         db.session.commit()
         flash('Event Successfully Created', category='success')
 
-        return redirect(url_for('events'))
-
+        return redirect(url_for("events"))
+    
     return render_template('event.html', title="Create An Event", form=form, user=session['username'], events=events)
 
 @app.route('/myevents', methods=['GET'])
@@ -49,6 +49,18 @@ def events_user():
     events = Event.query.filter(Event.user_id == session['id']).all()
 
     return render_template('user_events.html', title='My Events', user=session['username'], events=events)
+
+@app.route('/togglevisibility/<event_id>', methods=['GET'])
+def events_visibility(event_id):
+    #current_user =
+    event = Event.query.filter(Event.id == event_id).first()
+    event.visibility = not event.visibility
+    db.session.commit()
+    print("location")
+    print(request.referrer)
+    if request.referrer == "http://127.0.0.1:5000/events":
+        return redirect(url_for("events"))
+    return redirect(url_for("events_user"))
 
 @app.route('/events', methods=['GET'])
 def events():

@@ -7,6 +7,7 @@ from wtforms.fields.html5 import DateTimeLocalField
 from wtforms.validators import Required, Email, EqualTo, ValidationError, Length, DataRequired
 
 from .custom_validators import check_end_date_greater_than_start
+import datetime
 
 class RegistrationForm(FlaskForm):
     class Meta:
