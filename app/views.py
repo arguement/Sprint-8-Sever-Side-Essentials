@@ -413,11 +413,6 @@ def delete_event(current_user,event_id):
     db.session.commit()
     return jsonify({'message':'success'}),200
 
-# @app.route("/get-image/<image_name>",methods=["GET","POST"])
-# def get_image(image_name):
-#     print("haha")
-#     print(image_name)
-#     return send_from_directory("static/uploads", filename=image_name)
 
 @app.route('/get-image/<image_name>')
 def downloadFile (image_name):
