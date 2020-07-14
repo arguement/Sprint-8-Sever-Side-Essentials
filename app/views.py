@@ -10,6 +10,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
 from werkzeug.utils import secure_filename
 import os
+from werkzeug.urls import url_parse
+from flask.helpers import send_file, send_from_directory
+from werkzeug.exceptions import abort
 
 @app.route('/', methods=['GET'])
 def index():
@@ -56,9 +59,9 @@ def events_visibility(event_id):
     event = Event.query.filter(Event.id == event_id).first()
     event.visibility = not event.visibility
     db.session.commit()
-    print("location")
-    print(request.referrer)
-    if request.referrer == "http://127.0.0.1:5000/events":
+   
+    print(url_parse(request.referrer).path)
+    if url_parse(request.referrer).path == "/events":
         return redirect(url_for("events"))
     return redirect(url_for("events_user"))
 
@@ -226,11 +229,12 @@ def deleteUser(user_id):
 
 
 @app.route('/event', methods=['POST'])
-@token_required
+@token_required 
 def create_event(current_user):
     """Create a new event"""
     # data = request.json     # results from json request
     form = CreateEventForm()
+    # current_user = User.query.filter_by(id=1).first()
 
     if form.validate_on_submit():
         title = form.title.data
@@ -273,7 +277,9 @@ def get_all_events(current_user):
 
     output = []
     for event in events:
-        output.append(event.to_dict(show=["title", "description", "cost", "start_date", "visibility", "user_id", "flyer"]))
+        cur_event = event.to_dict(show=["title", "description", "cost", "start_date","end_date", "visibility", "user_id", "flyer"])
+
+        output.append(cur_event)
     return jsonify({'events': output}),200
 
 
@@ -406,3 +412,18 @@ def delete_event(current_user,event_id):
     db.session.delete(event)
     db.session.commit()
     return jsonify({'message':'success'}),200
+
+# @app.route("/get-image/<image_name>",methods=["GET","POST"])
+# def get_image(image_name):
+#     print("haha")
+#     print(image_name)
+#     return send_from_directory("static/uploads", filename=image_name)
+
+@app.route('/get-image/<image_name>')
+def downloadFile (image_name):
+    #For windows you need to use drive name [ex: F:/Example.pdf]
+    p = "static/uploads"
+    path = os.path.join(p,image_name)
+    return send_file(path, as_attachment=True)
+    
+       
